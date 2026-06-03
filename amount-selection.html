@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Amount Selection — Uphold Widget Prototype</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-bg: #F2F5FC;
+    --color-surface: #FFFFFF;
+    --color-surface-raised: #E8EDF8;
+    --color-line: #C8D0E6;
+    --color-text-primary: #0D1220;
+    --color-text-secondary: #344070;
+    --color-text-muted: #6B7A9E;
+    --color-green: #1A9C17;
+    --color-green-light: #14821E;
+    --color-error: #C93318;
+    --color-warning: #B87A00;
+    --color-success: #14821E;
+    --pill-green-bg: #E4F7E3;
+    --pill-blue-bg: #E3EEF7;
+    --pill-coral-bg: #F7E3E3;
+    --pill-gold-bg: #F7F0E3;
+    --ic-amber-bg: #FFF3DC; --ic-amber-txt: #8C5A00;
+    --ic-purple-bg: #EDE8FF; --ic-purple-txt: #5B2EBF;
+    --ic-teal-bg: #E0F7EE;  --ic-teal-txt: #0A6E42;
+    --ic-gray-bg: #E8EDF8;  --ic-gray-txt: #6B7A9E;
+    --ic-coral-bg: #FFE8E3; --ic-coral-txt: #B02E18;
+  }
+
+  html, body { background: var(--color-bg); color: var(--color-text-primary); font-family: 'Proxima Nova', 'Inter', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  #root { min-height: 100vh; }
+
+  /* Reviewer shell */
+  .reviewer-shell {
+    min-height: 100vh;
+    background: #DDE3F0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 0 48px;
+  }
+
+  .reviewer-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: 20px;
+    opacity: 0.6;
+  }
+
+  /* ── Grouped dropdown ── */
+  .dropdown-wrap {
+    position: relative;
+    width: 440px;
+    margin-bottom: 16px;
+  }
+
+  .dropdown-trigger {
+    width: 100%;
+    height: 48px;
+    background: var(--color-surface);
+    border: 0.5px solid var(--color-line);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .dropdown-trigger:hover { border-color: var(--color-text-muted); }
+  .dropdown-trigger.open { border-color: var(--color-green); }
+
+  .dropdown-trigger-label {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    text-align: left;
+  }
+
+  .dropdown-trigger-group {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    margin-right: 10px;
+  }
+
+  .dropdown-chevron {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    transition: transform 0.15s;
+    flex-shrink: 0;
+  }
+  .dropdown-trigger.open .dropdown-chevron { transform: rotate(180deg); }
+
+  .dropdown-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--color-surface);
+    border: 0.5px solid var(--color-line);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    z-index: 100;
+    overflow: hidden;
+    animation: dropIn 0.12s ease;
+  }
+  @keyframes dropIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .dropdown-group-header {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--color-green);
+    padding: 12px 16px 4px;
+  }
+
+  .dropdown-group-divider {
+    height: 0.5px;
+    background: var(--color-line);
+  }
+
+  .dropdown-option {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px 0 32px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    transition: background 0.1s;
+    gap: 8px;
+    border: none;
+    background: none;
+    width: 100%;
+    font-family: inherit;
+    text-align: left;
+  }
+  .dropdown-option:hover { background: var(--color-surface-raised); }
+  .dropdown-option:focus { outline: 2px solid var(--color-green); outline-offset: -2px; }
+  .dropdown-option.active {
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .dropdown-active-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-green);
+    flex-shrink: 0;
+    margin-left: -14px; /* pull back to align at 16px from left */
+    margin-right: 8px;
+  }
+
+  /* ── Prototype annotation ── */
+  .proto-annotation {
+    width: 440px;
+    background: #FFF8EC;
+    border: 0.5px solid #FAC461;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 20px;
+  }
+
+  .proto-annotation-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #8C5A00;
+    margin-bottom: 6px;
+  }
+
+  .proto-annotation-body {
+    font-size: 12px;
+    color: #344070;
+    line-height: 1.5;
+  }
+
+  /* Screen stage */
+  .screen-stage {
+    position: relative;
+    display: flex;
+    justify-content: center;
+  }
+
+  .screen-fade {
+    transition: opacity 0.15s ease;
+  }
+
+  /* Widget frame */
+  .widget-frame {
+    width: 393px;
+    height: 784px;
+    background: var(--color-bg);
+    border-radius: 20px;
+    border: 0.5px solid var(--color-line);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 20px;
+    gap: 6px;
+  }
+  .status-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-right: auto;
+    margin-left: 4px;
+  }
+  .status-icons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--color-text-primary);
+    font-size: 12px;
+  }
+
+  /* Nav bar */
+  .nav-bar {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    position: relative;
+  }
+  .nav-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 0.5px solid var(--color-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .nav-title {
+    flex: 1;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+  .nav-spacer { width: 28px; flex-shrink: 0; }
+
+  /* Divider */
+  .divider {
+    height: 0.5px;
+    background: var(--color-line);
+    width: 100%;
+  }
+
+  /* Zone label */
+  .zone-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    padding: 12px 16px 4px;
+  }
+
+  /* Node row */
+  .node-row {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.1s;
+  }
+  .node-row:active { background: rgba(255,255,255,0.03); }
+
+  .node-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-right: 12px;
+  }
+
+  .node-info { flex: 1; min-width: 0; }
+  .node-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .node-sub {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .node-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-right: 8px;
+  }
+  .node-right-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+  .node-right-sub {
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+
+  .node-chevron {
+    color: var(--color-text-muted);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* Connector */
+  .connector-section {
+    position: relative;
+    height: 0;
+    z-index: 3;
+  }
+
+  .connector-btn {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 0.5px solid var(--color-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    cursor: default;
+    background: var(--color-surface-raised);
+    flex-shrink: 0;
+  }
+  .connector-btn.swappable {
+    cursor: pointer;
+    background: var(--color-surface);
+    transition: background 0.15s;
+  }
+  .connector-btn.swappable:active {
+    background: var(--color-surface-raised);
+  }
+  .connector-btn.flipping {
+    animation: connFlip 0.18s ease forwards;
+  }
+
+  @keyframes connFlip {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(180deg); }
+  }
+
+  /* Amount zone */
+  .amount-zone {
+    padding: 28px 16px 24px;
+    cursor: pointer;
+    background: var(--color-surface);
+    border-top: 2px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .amount-zone.active {
+    border-top-color: var(--color-green);
+  }
+  .amount-zone.active.error-border {
+    border-top-color: var(--color-error);
+  }
+
+  .amount-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .amount-number {
+    font-size: 48px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    transition: font-size 0.15s ease, color 0.12s ease;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .amount-number.focused {
+    font-size: 56px;
+  }
+  .amount-number.is-zero {
+    color: var(--color-text-muted);
+  }
+  .amount-number.active-color {
+    color: var(--color-text-primary);
+  }
+  .amount-number.focused.active-color {
+    color: var(--color-text-primary);
+  }
+  .amount-number.error { color: var(--color-error) !important; }
+
+  /* flip animation */
+  .amount-number.flip-out {
+    animation: flipOut 80ms ease forwards;
+  }
+  .amount-number.flip-in {
+    animation: flipIn 80ms ease forwards;
+  }
+  @keyframes flipOut {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-4px); }
+  }
+  @keyframes flipIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .amount-unit {
+    font-size: 18px;
+    color: var(--color-text-muted);
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .amount-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding-bottom: 4px; /* baseline-align with text */
+  }
+
+  .max-pill {
+    width: 36px;
+    height: 22px;
+    border-radius: 4px;
+    border: 0.5px solid var(--color-line);
+    background: var(--color-surface-raised);
+    font-size: 10px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.1s, opacity 0.15s;
+  }
+  .max-pill:active { background: var(--color-line); }
+  .max-pill.dimmed { opacity: 0.5; }
+
+  .amount-equiv-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 0; /* handled by amount-row margin-bottom */
+  }
+
+  .amount-equiv {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    flex-grow: 0 !important;
+  }
+
+  .flip-pill {
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 3px;
+    border: 0.5px solid var(--color-line);
+    background: var(--color-surface-raised);
+    font-size: 10px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-family: inherit;
+    gap: 3px;
+    transition: background 0.1s, opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .flip-pill:active { background: var(--color-line); }
+  .flip-pill.dimmed { opacity: 0.5; }
+
+  .amount-error {
+    font-size: 12px;
+    color: var(--color-error);
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* Fee zone */
+  .fee-zone {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: border-left 0.2s;
+  }
+  .fee-zone.stale {
+    border-left: 3px solid var(--color-warning);
+    padding-left: 13px;
+  }
+
+  .fee-left { display: flex; flex-direction: column; gap: 2px; }
+  .fee-label { font-size: 11px; color: var(--color-text-muted); }
+  .fee-value { font-size: 13px; font-weight: 600; color: var(--color-text-primary); }
+
+  .fee-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-align: right;
+  }
+
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-green);
+    animation: pulse 1.5s infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .fee-shimmer {
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-surface-raised) 50%, var(--color-surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    width: 80px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Receive summary */
+  .receive-zone {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .receive-label { font-size: 12px; color: var(--color-text-muted); padding-top: 2px; }
+  .receive-right { text-align: right; }
+  .receive-value { font-size: 15px; font-weight: 600; color: var(--color-text-primary); }
+  .receive-sub { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
+
+  /* ── Tap-outside overlay ──
+     Covers the content area above the keypad panel.
+     Tapping it dismisses the keypad.
+  */
+  .keypad-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: none;
+  }
+  .keypad-backdrop.open { display: block; }
+
+  /* ── Floating keypad + CTA panel ──
+     Anchored to the bottom of the 784px frame. The panel grows
+     upward as the keypad reveals, overlaying fee/receive content.
+     CTA is always at the bottom; keypad slides in above it.
+  */
+  .keypad-cta-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--color-surface);
+    border-top: 0.5px solid var(--color-line);
+    z-index: 5;
+  }
+
+  /* Dismiss handle — "Done" bar at the top of the keypad panel */
+  .keypad-dismiss-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 8px 16px 0;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.22s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.15s;
+    opacity: 0;
+  }
+  .keypad-dismiss-bar.open {
+    max-height: 36px;
+    opacity: 1;
+  }
+
+  .keypad-done-btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-green);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 0 4px 16px;
+    line-height: 1;
+  }
+  .keypad-done-btn:active { opacity: 0.6; }
+
+  /* Keypad portion — max-height collapses it when closed */
+  .keypad-slide {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .keypad-slide.open {
+    max-height: 280px; /* enough for 4 rows + padding */
+  }
+
+  /* Keypad grid inside the panel */
+  .keypad {
+    padding: 8px 12px 4px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  .keypad-key {
+    height: 52px;
+    background: var(--color-bg);
+    border: 0.5px solid var(--color-line);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, transform 0.08s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .keypad-key:active {
+    background: var(--color-surface-raised);
+    transform: scale(0.96);
+  }
+  .keypad-key.backspace { font-size: 16px; color: var(--color-text-muted); }
+  .keypad-key.empty { background: transparent; border-color: transparent; cursor: default; }
+  .keypad-key.empty:active { background: transparent; transform: none; }
+
+  /* CTA inside the panel */
+  .cta-zone {
+    padding: 12px 16px 24px;
+  }
+
+  .cta-btn {
+    width: 100%;
+    height: 52px;
+    border-radius: 12px;
+    background: var(--color-green);
+    border: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: #FFFFFF;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.1px;
+  }
+  .cta-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .cta-btn:not(:disabled):active {
+    transform: scale(0.97);
+  }
+
+  /* Bottom sheet */
+  .sheet-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(9,13,20,0.7);
+    z-index: 10;
+    border-radius: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-out;
+  }
+  .sheet-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .bottom-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--color-surface);
+    border-radius: 16px 16px 20px 20px;
+    border: 0.5px solid var(--color-line);
+    z-index: 11;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+    max-height: 70%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .bottom-sheet.open {
+    transform: translateY(0);
+  }
+  .bottom-sheet.closing {
+    transform: translateY(100%);
+    transition: transform 0.25s ease-in;
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--color-line);
+    border-radius: 2px;
+    margin: 10px auto 4px;
+    flex-shrink: 0;
+  }
+
+  .sheet-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    padding: 6px 16px 12px;
+    flex-shrink: 0;
+  }
+
+  .sheet-list {
+    overflow-y: auto;
+    flex: 1;
+    padding-bottom: 24px;
+  }
+
+  .sheet-item {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-top: 0.5px solid var(--color-line);
+  }
+  .sheet-item:first-child { border-top: none; }
+  .sheet-item:active { background: var(--color-surface-raised); }
+  .sheet-item.selected { background: rgba(132,251,127,0.05); }
+
+  .sheet-item-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-green);
+    background: var(--color-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #090D14;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .sheet-item-check.unselected {
+    background: transparent;
+    border-color: var(--color-line);
+  }
+
+  /* Swap row animation */
+  .swap-animate {
+    animation: rowSwap 0.18s ease;
+  }
+  @keyframes rowSwap {
+    0% { opacity: 1; transform: translateY(0); }
+    40% { opacity: 0; transform: translateY(8px); }
+    60% { opacity: 0; transform: translateY(-8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ─── TOKENS ─── */
+const T = {
+  bg: '#F2F5FC', surface: '#FFFFFF', surfaceRaised: '#E8EDF8', line: '#C8D0E6',
+  textPrimary: '#0D1220', textSecondary: '#344070', textMuted: '#6B7A9E',
+  green: '#1A9C17', greenLight: '#14821E', error: '#C93318', warning: '#B87A00', success: '#14821E',
+  icAmberBg: '#FFF3DC', icAmberTxt: '#8C5A00',
+  icPurpleBg: '#EDE8FF', icPurpleTxt: '#5B2EBF',
+  icTealBg: '#E0F7EE', icTealTxt: '#0A6E42',
+  icGrayBg: '#E8EDF8', icGrayTxt: '#6B7A9E',
+  icCoralBg: '#FFE8E3', icCoralTxt: '#B02E18',
+};
+
+/* ─── USE CASES DATA ─── */
+const USE_CASES = [
+  {
+    id: 'deposit-card', label: 'Card deposit', title: 'Add funds',
+    group: 'Deposits', isAmountReadOnly: false,
+    origin: {
+      id: 'card-4242', name: 'Visa ···4242', sub: 'Card · expires 09/26',
+      icon: '💳', iconColor: 'gray', rightVal: 'Funding source', rightSub: null, selectable: true,
+      type: 'external',
+      options: [
+        { id: 'card-4242', name: 'Visa ···4242', sub: 'Card · expires 09/26', icon: '💳', iconColor: 'gray', rightVal: 'Funding source', rightSub: null },
+        { id: 'card-7891', name: 'Mastercard ···7891', sub: 'Card · expires 12/27', icon: '💳', iconColor: 'gray', rightVal: 'Funding source', rightSub: null },
+        { id: 'card-3300', name: 'Visa ···3300', sub: 'Card · expires 03/25', icon: '💳', iconColor: 'gray', rightVal: 'Funding source', rightSub: null },
+      ]
+    },
+    destination: {
+      id: 'usd-main', name: 'USD account', sub: 'Internal · fiat',
+      icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'current balance', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'usd-main', name: 'USD account', sub: 'Internal · fiat', icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'current balance' },
+        { id: 'eur-main', name: 'EUR account', sub: 'Internal · fiat', icon: '€', iconColor: 'teal', rightVal: '€1,820.00', rightSub: 'current balance' },
+        { id: 'gbp-main', name: 'GBP account', sub: 'Internal · fiat', icon: '£', iconColor: 'teal', rightVal: '£1,560.00', rightSub: 'current balance' },
+      ]
+    },
+    swappable: false,
+    defaultAmount: '500', defaultUnit: 'USD', canFlip: false, hasMax: false,
+    equivText: (amt, flipped) => 'Charged to card',
+    feeLabel: 'Processing fee', feeValue: '$2.50 (0.5%)', feeTiming: 'Est. instant',
+    receiveLabel: 'Account receives', receiveValue: (amt, flipped) => {
+      const n = parseFloat(amt) || 0;
+      const fee = n * 0.005;
+      return `$${(n - fee).toFixed(2)}`;
+    },
+    receiveSub: (amt) => { const n = parseFloat(amt)||0; return `after $${(n*0.005).toFixed(2)} fee`; },
+    ctaLabel: 'Add funds',
+    availableBalance: 99999, availableBalanceDisplay: 'unlimited', availableUnit: 'USD',
+    isLiveRate: false,
+  },
+  /* ── bank-deposit (UC 2) ── */
+  {
+    id: 'bank-deposit', label: 'Bank deposit', title: 'Add funds',
+    group: 'Deposits', isAmountReadOnly: false,
+    zoneLabels: { origin: 'Funding source', destination: 'Receiving account' },
+    origin: {
+      id: 'chase-4821', name: 'Chase Checking', sub: 'Account · ···4821',
+      icon: '🏦', iconColor: 'gray', rightVal: 'Funding source', rightSub: null, selectable: true,
+      type: 'external',
+      options: [
+        { id: 'chase-4821', name: 'Chase Checking', sub: 'Account · ···4821', icon: '🏦', iconColor: 'gray', rightVal: 'Funding source', rightSub: null },
+        { id: 'wells-2210', name: 'Wells Fargo', sub: 'Account · ···2210', icon: '🏦', iconColor: 'gray', rightVal: 'Funding source', rightSub: null },
+        { id: 'bofa-9933', name: 'Bank of America', sub: 'Account · ···9933', icon: '🏦', iconColor: 'gray', rightVal: 'Funding source', rightSub: null },
+      ]
+    },
+    destination: {
+      id: 'usd-main', name: 'USD account', sub: 'Internal · fiat',
+      icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'current balance', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'usd-main', name: 'USD account', sub: 'Internal · fiat', icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'current balance' },
+        { id: 'eur-main', name: 'EUR account', sub: 'Internal · fiat', icon: '€', iconColor: 'teal', rightVal: '€1,820.00', rightSub: 'current balance' },
+        { id: 'gbp-main', name: 'GBP account', sub: 'Internal · fiat', icon: '£', iconColor: 'teal', rightVal: '£1,560.00', rightSub: 'current balance' },
+      ]
+    },
+    swappable: false,
+    defaultAmount: '500', defaultUnit: 'USD', canFlip: false, hasMax: false,
+    equivText: () => 'Charged to account',
+    feeLabel: 'Processing fee', feeValue: '$1.00 flat', feeTiming: 'Est. 1–3 business days',
+    receiveLabel: 'Account receives',
+    receiveValue: (amt) => `$${Math.max(0, (parseFloat(amt)||0) - 1.00).toFixed(2)}`,
+    receiveSub: () => 'after $1.00 fee',
+    ctaLabel: 'Add funds',
+    availableBalance: 99999, availableBalanceDisplay: 'unlimited', availableUnit: 'USD',
+    isLiveRate: false,
+  },
+  {
+    id: 'deposit-crypto', label: 'Crypto deposit', title: 'Add funds',
+    group: 'Deposits', isAmountReadOnly: false,
+    origin: {
+      id: 'btc-ext', name: 'bc1q...x7f2', sub: 'External · BTC address',
+      icon: '⬡', iconColor: 'gray', rightVal: 'External wallet', rightSub: null, selectable: true,
+      type: 'external',
+      options: [
+        { id: 'btc-ext', name: 'bc1q...x7f2', sub: 'External · BTC address', icon: '⬡', iconColor: 'gray', rightVal: 'External wallet', rightSub: null },
+        { id: 'btc-ext2', name: 'bc1p...k3m9', sub: 'External · BTC address', icon: '⬡', iconColor: 'gray', rightVal: 'External wallet', rightSub: null },
+      ]
+    },
+    destination: {
+      id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto',
+      icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance' },
+        { id: 'eth-main', name: 'Ethereum', sub: 'Internal · crypto', icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'current balance' },
+      ]
+    },
+    swappable: false,
+    defaultAmount: '0.05', defaultUnit: 'BTC', canFlip: true, hasMax: false,
+    equivLine: (amt, flipped) => flipped ? null : `≈ $${(parseFloat(amt||0)*56043.2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`,
+    equivLineFlipped: (amt) => `≈ ${(parseFloat(amt||0)/56043.2).toFixed(5)} BTC`,
+    fiatRate: 56043.2, assetUnit: 'BTC', fiatUnit: 'USD',
+    feeLabel: 'Network fee', feeValue: 'Paid by sender', feeTiming: 'Est. 10–30 min',
+    receiveLabel: 'Account receives',
+    receiveValue: (amt, flipped) => {
+      const btc = flipped ? (parseFloat(amt)||0)/56043.2 : parseFloat(amt)||0;
+      return `${btc.toFixed(5)} BTC`;
+    },
+    receiveSub: (amt, flipped) => {
+      const btc = flipped ? (parseFloat(amt)||0)/56043.2 : parseFloat(amt)||0;
+      return `≈ $${(btc*56043.2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} at current rate`;
+    },
+    ctaLabel: 'Add funds',
+    availableBalance: 999, availableUnit: 'BTC',
+    isLiveRate: false,
+  },
+  {
+    id: 'withdraw-bank', label: 'Bank withdrawal', title: 'Withdraw',
+    group: 'Withdrawals', isAmountReadOnly: false,
+    origin: {
+      id: 'usd-main', name: 'USD account', sub: 'Internal · fiat',
+      icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'available', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'usd-main', name: 'USD account', sub: 'Internal · fiat', icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'available' },
+        { id: 'eur-main', name: 'EUR account', sub: 'Internal · fiat', icon: '€', iconColor: 'teal', rightVal: '€1,820.00', rightSub: 'available' },
+      ]
+    },
+    destination: {
+      id: 'chase-4821', name: 'Chase Checking', sub: 'Account · ···4821',
+      icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null, selectable: true,
+      type: 'external',
+      options: [
+        { id: 'chase-4821', name: 'Chase Checking', sub: 'Account · ···4821', icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null },
+        { id: 'wells-2210', name: 'Wells Fargo', sub: 'Account · ···2210', icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null },
+        { id: 'bofa-9933', name: 'Bank of America', sub: 'Account · ···9933', icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null },
+      ]
+    },
+    swappable: false,
+    defaultAmount: '500', defaultUnit: 'USD', canFlip: false, hasMax: true,
+    equivText: () => 'From USD account',
+    feeLabel: 'Withdrawal fee', feeValue: '$1.50 flat', feeTiming: 'Est. 1–3 business days',
+    receiveLabel: 'Account receives',
+    receiveValue: (amt) => `$${Math.max(0, (parseFloat(amt)||0) - 1.50).toFixed(2)}`,
+    receiveSub: () => 'after $1.50 fee',
+    ctaLabel: 'Withdraw USD',
+    availableBalance: 2400, availableBalanceDisplay: '$2,400.00', availableUnit: 'USD',
+    isLiveRate: false,
+  },
+  /* ── card-withdrawal (UC 5) ── */
+  {
+    id: 'card-withdrawal', label: 'Card withdrawal', title: 'Withdraw',
+    group: 'Withdrawals', isAmountReadOnly: false,
+    zoneLabels: { origin: 'From', destination: 'To' },
+    origin: {
+      id: 'usd-main', name: 'USD account', sub: 'Internal · fiat',
+      icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'available', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'usd-main', name: 'USD account', sub: 'Internal · fiat', icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'available' },
+        { id: 'eur-main', name: 'EUR account', sub: 'Internal · fiat', icon: '€', iconColor: 'teal', rightVal: '€1,820.00', rightSub: 'available' },
+      ]
+    },
+    destination: {
+      id: 'card-4242', name: 'Visa ···4242', sub: 'Card · expires 09/26',
+      icon: '💳', iconColor: 'gray', rightVal: 'Destination', rightSub: null, selectable: true,
+      type: 'external',
+      options: [
+        { id: 'card-4242', name: 'Visa ···4242', sub: 'Card · expires 09/26', icon: '💳', iconColor: 'gray', rightVal: 'Destination', rightSub: null },
+        { id: 'card-7891', name: 'Mastercard ···7891', sub: 'Card · expires 12/27', icon: '💳', iconColor: 'gray', rightVal: 'Destination', rightSub: null },
+        { id: 'card-3300', name: 'Visa ···3300', sub: 'Card · expires 03/25', icon: '💳', iconColor: 'gray', rightVal: 'Destination', rightSub: null },
+      ]
+    },
+    swappable: false,
+    defaultAmount: '500', defaultUnit: 'USD', canFlip: false, hasMax: true,
+    equivText: () => 'From USD account',
+    feeLabel: 'Withdrawal fee', feeValue: '$2.50 (0.5%)', feeTiming: 'Est. 3–5 business days',
+    receiveLabel: 'Card receives',
+    receiveValue: (amt) => `$${Math.max(0, (parseFloat(amt)||0) * 0.995).toFixed(2)}`,
+    receiveSub: (amt) => `after $${((parseFloat(amt)||0) * 0.005).toFixed(2)} fee`,
+    ctaLabel: 'Withdraw to card',
+    availableBalance: 2400, availableBalanceDisplay: '$2,400.00', availableUnit: 'USD',
+    isLiveRate: false,
+  },
+  {
+    id: 'withdraw-crypto', label: 'Crypto withdrawal', title: 'Withdraw',
+    group: 'Withdrawals', isAmountReadOnly: false,
+    origin: {
+      id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto',
+      icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'available', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'available' },
+        { id: 'eth-main', name: 'Ethereum', sub: 'Internal · crypto', icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'available' },
+      ]
+    },
+    destination: {
+      id: 'btc-ext', name: 'bc1q...x7f2', sub: 'External · BTC address',
+      icon: '⬡', iconColor: 'gray', rightVal: 'External wallet', rightSub: null, selectable: true,
+      type: 'external',
+      options: [
+        { id: 'btc-ext', name: 'bc1q...x7f2', sub: 'External · BTC address', icon: '⬡', iconColor: 'gray', rightVal: 'External wallet', rightSub: null },
+        { id: 'btc-ext2', name: 'bc1p...k3m9', sub: 'External · BTC address', icon: '⬡', iconColor: 'gray', rightVal: 'External wallet', rightSub: null },
+      ]
+    },
+    swappable: false,
+    defaultAmount: '0.05', defaultUnit: 'BTC', canFlip: true, hasMax: true,
+    equivLine: (amt, flipped) => flipped ? null : `≈ $${(parseFloat(amt||0)*56043.2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`,
+    equivLineFlipped: (amt) => `≈ ${(parseFloat(amt||0)/56043.2).toFixed(5)} BTC`,
+    fiatRate: 56043.2, assetUnit: 'BTC', fiatUnit: 'USD',
+    feeLabel: 'Network fee', feeValue: '≈ $1.80 (est.)', feeTiming: 'Est. 10–30 min',
+    receiveLabel: 'Wallet receives',
+    receiveValue: (amt, flipped) => {
+      const btc = flipped ? (parseFloat(amt)||0)/56043.2 : parseFloat(amt)||0;
+      const netFee = 0.00003188;
+      return `≈ ${Math.max(0,btc-netFee).toFixed(5)} BTC`;
+    },
+    receiveSub: (amt, flipped) => {
+      const btc = flipped ? (parseFloat(amt)||0)/56043.2 : parseFloat(amt)||0;
+      const netFee = 0.00003188;
+      const net = Math.max(0,btc-netFee);
+      return `after network fee · ≈ $${(net*56043.2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    },
+    ctaLabel: 'Withdraw BTC',
+    availableBalance: 0.14820, availableBalanceDisplay: '0.14820 BTC', availableUnit: 'BTC',
+    isLiveRate: false,
+  },
+  {
+    id: 'trade', label: 'Swap', title: 'Swap',
+    group: 'Other', isAmountReadOnly: false,
+    origin: {
+      id: 'eth-main', name: 'Ethereum', sub: 'Internal · crypto',
+      icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'available', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'eth-main', name: 'Ethereum', sub: 'Internal · crypto', icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'available' },
+        { id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'available' },
+        { id: 'usd-main', name: 'USD account', sub: 'Internal · fiat', icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'available' },
+      ]
+    },
+    destination: {
+      id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto',
+      icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance' },
+        { id: 'eth-main', name: 'Ethereum', sub: 'Internal · crypto', icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'current balance' },
+        { id: 'usd-main', name: 'USD account', sub: 'Internal · fiat', icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'current balance' },
+      ]
+    },
+    swappable: true,
+    defaultAmount: '1.0', defaultUnit: 'ETH', canFlip: true, hasMax: true,
+    equivLine: (amt, flipped) => flipped ? null : `≈ $${(parseFloat(amt||0)*3250).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`,
+    equivLineFlipped: (amt) => `≈ ${(parseFloat(amt||0)/3250).toFixed(5)} ETH`,
+    fiatRate: 3250, assetUnit: 'ETH', fiatUnit: 'USD',
+    feeLabel: 'Rate · 1 ETH = 0.05791 BTC', feeValue: 'Spread 0.5%', feeTiming: 'live',
+    receiveLabel: 'You receive',
+    receiveValue: (amt, flipped, stale) => {
+      if (stale) return '—';
+      const eth = flipped ? (parseFloat(amt)||0)/3250 : parseFloat(amt)||0;
+      const btc = eth * 0.05791 * 0.995;
+      return `${btc.toFixed(5)} BTC`;
+    },
+    receiveSub: (amt, flipped, stale) => {
+      if (stale) return '';
+      const eth = flipped ? (parseFloat(amt)||0)/3250 : parseFloat(amt)||0;
+      const btc = eth * 0.05791 * 0.995;
+      return `after 0.5% spread · ≈ $${(btc*56043.2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} net`;
+    },
+    ctaLabel: 'Swap ETH → BTC',
+    availableBalance: 1.840, availableBalanceDisplay: '1.840 ETH', availableUnit: 'ETH',
+    isLiveRate: true,
+  },
+  {
+    id: 'transfer', label: 'Transfer', title: 'Transfer',
+    group: 'Other', isAmountReadOnly: false,
+    origin: {
+      id: 'btc-main', name: 'Bitcoin · main', sub: 'Internal · crypto',
+      icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'available', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'btc-main', name: 'Bitcoin · main', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'available' },
+        { id: 'btc-savings', name: 'Bitcoin · savings', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.02100 BTC', rightSub: 'available' },
+        { id: 'eth-main', name: 'Ethereum · main', sub: 'Internal · crypto', icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'available' },
+      ]
+    },
+    destination: {
+      id: 'btc-savings', name: 'Bitcoin · savings', sub: 'Internal · crypto',
+      icon: '₿', iconColor: 'amber', rightVal: '0.02100 BTC', rightSub: 'current balance', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'btc-savings', name: 'Bitcoin · savings', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.02100 BTC', rightSub: 'current balance' },
+        { id: 'btc-main', name: 'Bitcoin · main', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance' },
+      ]
+    },
+    swappable: false,
+    defaultAmount: '0.05', defaultUnit: 'BTC', canFlip: true, hasMax: true,
+    equivLine: (amt) => `≈ $${(parseFloat(amt||0)*56043.2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`,
+    equivLineFlipped: (amt) => `≈ ${(parseFloat(amt||0)/56043.2).toFixed(5)} BTC`,
+    fiatRate: 56043.2, assetUnit: 'BTC', fiatUnit: 'USD',
+    feeLabel: 'Fee', feeValue: 'None', feeTiming: 'Instant',
+    receiveLabel: 'Account receives',
+    receiveValue: (amt, flipped) => {
+      const btc = flipped ? (parseFloat(amt)||0)/56043.2 : parseFloat(amt)||0;
+      return `${btc.toFixed(5)} BTC`;
+    },
+    receiveSub: (amt, flipped) => {
+      const btc = flipped ? (parseFloat(amt)||0)/56043.2 : parseFloat(amt)||0;
+      return `no fee · ≈ $${(btc*56043.2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    },
+    ctaLabel: 'Transfer BTC',
+    availableBalance: 0.14820, availableBalanceDisplay: '0.14820 BTC', availableUnit: 'BTC',
+    isLiveRate: false,
+  },
+  {
+    id: 'send', label: 'Send', title: 'Send',
+    group: 'Other', isAmountReadOnly: false,
+    origin: {
+      id: 'usd-main', name: 'USD account', sub: 'Internal · fiat',
+      icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'available', selectable: true,
+      type: 'internal',
+      options: [
+        { id: 'usd-main', name: 'USD account', sub: 'Internal · fiat', icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'available' },
+        { id: 'eur-main', name: 'EUR account', sub: 'Internal · fiat', icon: '€', iconColor: 'teal', rightVal: '€1,820.00', rightSub: 'available' },
+      ]
+    },
+    destination: {
+      id: 'jane-doe', name: 'Jane Doe', sub: 'User · @janedoe',
+      icon: 'JD', iconColor: 'coral', rightVal: 'Recipient', rightSub: null, selectable: true,
+      type: 'external',
+      options: [
+        { id: 'jane-doe', name: 'Jane Doe', sub: 'User · @janedoe', icon: 'JD', iconColor: 'coral', rightVal: 'Recipient', rightSub: null },
+        { id: 'john-smith', name: 'John Smith', sub: 'User · @jsmith', icon: 'JS', iconColor: 'coral', rightVal: 'Recipient', rightSub: null },
+        { id: 'maria-r', name: 'Maria Rodriguez', sub: 'User · @mariarg', icon: 'MR', iconColor: 'coral', rightVal: 'Recipient', rightSub: null },
+      ]
+    },
+    swappable: false,
+    defaultAmount: '100', defaultUnit: 'USD', canFlip: false, hasMax: true,
+    equivText: () => 'From USD account',
+    feeLabel: 'Fee', feeValue: 'None', feeTiming: 'Instant',
+    receiveLabel: 'Jane receives',
+    receiveValue: (amt) => `$${(parseFloat(amt)||0).toFixed(2)}`,
+    receiveSub: () => 'no fee',
+    ctaLabel: 'Send USD',
+    availableBalance: 2400, availableBalanceDisplay: '$2,400.00', availableUnit: 'USD',
+    isLiveRate: false,
+  },
+];
+
+/* ─── HELPERS ─── */
+function iconColors(color) {
+  const map = {
+    amber: { bg: T.icAmberBg, txt: T.icAmberTxt },
+    purple: { bg: T.icPurpleBg, txt: T.icPurpleTxt },
+    teal: { bg: T.icTealBg, txt: T.icTealTxt },
+    gray: { bg: T.icGrayBg, txt: T.icGrayTxt },
+    coral: { bg: T.icCoralBg, txt: T.icCoralTxt },
+  };
+  return map[color] || map.gray;
+}
+
+function NodeIcon({ icon, iconColor, size = 40 }) {
+  const c = iconColors(iconColor);
+  return (
+    <div className="node-icon" style={{ width: size, height: size, background: c.bg, color: c.txt, fontSize: size < 32 ? 11 : 16 }}>
+      {icon}
+    </div>
+  );
+}
+
+/* ─── BOTTOM SHEET ─── */
+function BottomSheet({ open, onClose, title, items, selectedId, onSelect }) {
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(() => { setClosing(false); onClose(); }, 250);
+  };
+
+  const handleSelect = (item) => {
+    onSelect(item);
+    handleClose();
+  };
+
+  return (
+    <>
+      <div className={`sheet-overlay ${open && !closing ? 'open' : ''}`} onClick={handleClose} />
+      <div className={`bottom-sheet ${open && !closing ? 'open' : ''} ${closing ? 'closing' : ''}`}>
+        <div className="sheet-handle" />
+        <div className="sheet-title">{title}</div>
+        <div className="sheet-list">
+          {items.map(item => (
+            <div
+              key={item.id}
+              className={`sheet-item ${item.id === selectedId ? 'selected' : ''}`}
+              onClick={() => handleSelect(item)}
+            >
+              <NodeIcon icon={item.icon} iconColor={item.iconColor} />
+              <div className="node-info" style={{ marginLeft: 12 }}>
+                <div className="node-name">{item.name}</div>
+                <div className="node-sub">{item.sub}</div>
+              </div>
+              <div className={`sheet-item-check ${item.id === selectedId ? '' : 'unselected'}`}>
+                {item.id === selectedId ? '✓' : ''}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ─── GROUPED DROPDOWN ─── */
+const GROUPS = ['Deposits', 'Withdrawals', 'Other'];
+
+function GroupedDropdown({ useCases, activeId, onChange }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const optionRefs = useRef({});
+
+  const activeUC = useCases.find(uc => uc.id === activeId) || useCases[0];
+  const flatOptions = useCases; // already in group order
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleSelect = (uc) => {
+    setOpen(false);
+    onChange(uc.id);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!open) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); }
+      return;
+    }
+    const ids = flatOptions.map(uc => uc.id);
+    const cur = ids.indexOf(activeId);
+    if (e.key === 'Escape' || e.key === 'Tab') { setOpen(false); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); const next = ids[(cur + 1) % ids.length]; onChange(next); optionRefs.current[next]?.focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); const prev = ids[(cur - 1 + ids.length) % ids.length]; onChange(prev); optionRefs.current[prev]?.focus(); }
+    else if (e.key === 'Enter') { setOpen(false); }
+  };
+
+  return (
+    <div className="dropdown-wrap" ref={wrapRef} onKeyDown={handleKeyDown}>
+      <button
+        className={`dropdown-trigger ${open ? 'open' : ''}`}
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className="dropdown-trigger-group">{activeUC.group}</span>
+        <span className="dropdown-trigger-label">{activeUC.label}</span>
+        <span className="dropdown-chevron">▾</span>
+      </button>
+
+      {open && (
+        <div className="dropdown-panel" role="listbox">
+          {GROUPS.map((grp, gi) => {
+            const items = useCases.filter(uc => uc.group === grp);
+            if (!items.length) return null;
+            return (
+              <div key={grp}>
+                {gi > 0 && <div className="dropdown-group-divider" />}
+                <div className="dropdown-group-header">{grp}</div>
+                {items.map(uc => (
+                  <button
+                    key={uc.id}
+                    ref={el => optionRefs.current[uc.id] = el}
+                    className={`dropdown-option ${uc.id === activeId ? 'active' : ''}`}
+                    role="option"
+                    aria-selected={uc.id === activeId}
+                    onClick={() => handleSelect(uc)}
+                  >
+                    {uc.id === activeId && <span className="dropdown-active-dot" />}
+                    {uc.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── PROTOTYPE ANNOTATION ─── */
+function PrototypeAnnotation({ text }) {
+  if (!text) return null;
+  return (
+    <div className="proto-annotation">
+      <div className="proto-annotation-label">Open decision</div>
+      <div className="proto-annotation-body">{text}</div>
+    </div>
+  );
+}
+
+
+/* ─── MAIN WIDGET ─── */
+function TransactionWidget({ config }) {
+  const [origin, setOrigin] = useState(config.origin);
+  const [destination, setDestination] = useState(config.destination);
+  const [rawAmount, setRawAmount] = useState(config.defaultAmount);
+  const [unit, setUnit] = useState(config.defaultUnit);
+  const [flipped, setFlipped] = useState(false);
+  const [keypadOpen, setKeypadOpen] = useState(false);
+  const [sheetTarget, setSheetTarget] = useState(null); // 'origin' | 'destination'
+  const [swapAnim, setSwapAnim] = useState(false);
+  const [flipPhase, setFlipPhase] = useState(null); // 'out' | 'in' | null
+  const [rateAge, setRateAge] = useState(0);
+  const [rateStale, setRateStale] = useState(false);
+  const [rateRefreshing, setRateRefreshing] = useState(false);
+
+  // live rate counter for trade
+  useEffect(() => {
+    if (!config.isLiveRate) return;
+    const id = setInterval(() => {
+      setRateAge(a => {
+        const next = a + 1;
+        if (next >= 30 && !rateStale) setRateStale(true);
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [config.isLiveRate, rateStale]);
+
+  const handleRefreshRate = () => {
+    if (!rateStale) return;
+    setRateRefreshing(true);
+    setTimeout(() => {
+      setRateRefreshing(false);
+      setRateStale(false);
+      setRateAge(0);
+    }, 1200);
+  };
+
+  // Amount validation
+  const numAmt = parseFloat(rawAmount) || 0;
+  const available = config.availableBalance || 99999;
+  const minEquiv = 10;
+
+  // Convert to base unit for validation
+  const baseAmt = flipped && config.fiatRate
+    ? numAmt / config.fiatRate
+    : numAmt;
+
+  const overBalance = baseAmt > available && rawAmount !== '';
+  const belowMin = numAmt > 0 && (flipped && config.fiatRate ? numAmt < minEquiv : numAmt * (config.fiatRate || 1) < minEquiv);
+
+  const amtError = overBalance
+    ? `Exceeds available balance of ${config.availableBalanceDisplay || config.availableBalance + ' ' + config.availableUnit}.`
+    : belowMin
+    ? 'Minimum amount is $10.'
+    : null;
+
+  const ctaDisabled = !!amtError || !numAmt || rateStale;
+
+  // Flip denomination — two-phase Y animation
+  const handleFlip = () => {
+    if (!config.canFlip || !config.fiatRate) return;
+    setFlipPhase('out');
+    setTimeout(() => {
+      const wasFlipped = flipped;
+      if (wasFlipped) {
+        const fiatVal = parseFloat(rawAmount) || 0;
+        const assetVal = fiatVal / config.fiatRate;
+        setRawAmount(assetVal.toFixed(5).replace(/\.?0+$/, '') || '0');
+      } else {
+        const assetVal = parseFloat(rawAmount) || 0;
+        const fiatVal = assetVal * config.fiatRate;
+        setRawAmount(fiatVal.toFixed(2));
+      }
+      setFlipped(!wasFlipped);
+      setFlipPhase('in');
+      setTimeout(() => setFlipPhase(null), 80);
+    }, 80);
+  };
+
+  // Max button
+  const handleMax = () => {
+    const bal = config.availableBalance;
+    if (flipped && config.fiatRate) {
+      setRawAmount((bal * config.fiatRate).toFixed(2));
+    } else {
+      setRawAmount(typeof bal === 'number' && bal < 1 ? bal.toFixed(5) : String(bal));
+    }
+  };
+
+  // Keypad input
+  const handleKey = (k) => {
+    if (k === '⌫') {
+      setRawAmount(prev => prev.length <= 1 ? '0' : prev.slice(0, -1));
+    } else if (k === '.') {
+      if (!rawAmount.includes('.')) setRawAmount(prev => (prev === '0' ? '0.' : prev + '.'));
+    } else {
+      setRawAmount(prev => {
+        if (prev === '0') return k;
+        // max 8 digits before decimal
+        const parts = prev.split('.');
+        if (parts[1] !== undefined && parts[1].length >= 8) return prev;
+        if (parts[0].length >= 8 && !prev.includes('.')) return prev;
+        return prev + k;
+      });
+    }
+  };
+
+  // Swap rows (trade only)
+  const handleSwap = () => {
+    setSwapAnim(true);
+    setTimeout(() => {
+      setOrigin(destination);
+      setDestination(origin);
+      setSwapAnim(false);
+    }, 90);
+  };
+
+  // Equiv line
+  const equivText = (() => {
+    if (config.equivText) return config.equivText(rawAmount, flipped);
+    if (flipped && config.equivLineFlipped) return config.equivLineFlipped(rawAmount);
+    if (config.equivLine) return config.equivLine(rawAmount, flipped);
+    return null;
+  })();
+
+  const currentUnit = flipped ? (config.fiatUnit || config.defaultUnit) : config.defaultUnit;
+
+  // Receive value
+  const receiveVal = config.receiveValue
+    ? config.receiveValue(rawAmount, flipped, rateStale)
+    : '—';
+  const receiveSub = config.receiveSub
+    ? config.receiveSub(rawAmount, flipped, rateStale)
+    : '';
+
+  return (
+    <div className="widget-frame">
+      {/* Status bar */}
+      <div className="status-bar">
+        <span className="status-time">9:41</span>
+        <div className="status-icons">
+          <span>●●●</span>
+          <span>WiFi</span>
+          <span>🔋</span>
+        </div>
+      </div>
+
+      {/* Nav bar */}
+      <div className="nav-bar">
+        <div className="nav-close">✕</div>
+        <div className="nav-title">{config.title}</div>
+        <div className="nav-spacer" />
+      </div>
+      <div className="divider" />
+
+      {/* Amount zone — first, hero position */}
+      {(() => {
+        const readOnly = !!config.isAmountReadOnly;
+        const isEmpty = !rawAmount || rawAmount === '0';
+        const numCls = [
+          'amount-number',
+          !readOnly && keypadOpen ? 'focused' : '',
+          !readOnly && keypadOpen && !amtError ? 'active-color' : '',
+          amtError ? 'error' : '',
+          isEmpty ? 'is-zero' : '',
+          flipPhase === 'out' ? 'flip-out' : '',
+          flipPhase === 'in' ? 'flip-in' : '',
+        ].filter(Boolean).join(' ');
+
+        return (
+          <div
+            className={[
+              'amount-zone',
+              !readOnly && keypadOpen ? 'active' : '',
+              !readOnly && keypadOpen && amtError ? 'error-border' : '',
+            ].filter(Boolean).join(' ')}
+            onClick={() => { if (!readOnly) setKeypadOpen(true); }}
+            style={readOnly ? { cursor: 'default' } : {}}
+          >
+            <div className="amount-row">
+              <span className={numCls}>{rawAmount || '0'}</span>
+              <span className="amount-unit">
+                {currentUnit}
+                {readOnly && (
+                  <span style={{ fontSize: 12, marginLeft: 6, color: T.textMuted, verticalAlign: 'middle' }}>🔒</span>
+                )}
+              </span>
+              <div className="amount-controls">
+                {!readOnly && config.hasMax && (
+                  <button
+                    className={`max-pill ${isEmpty ? 'dimmed' : ''}`}
+                    onMouseDown={e => { e.stopPropagation(); handleMax(); }}
+                  >
+                    Max
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="amount-equiv-row">
+              <span className="amount-equiv">{equivText}</span>
+              {!readOnly && config.canFlip && config.fiatRate && (
+                <button
+                  className={`flip-pill ${isEmpty ? 'dimmed' : ''}`}
+                  onMouseDown={e => { e.stopPropagation(); handleFlip(); }}
+                >
+                  ⇅ {flipped ? config.assetUnit : config.fiatUnit}
+                </button>
+              )}
+            </div>
+
+            {amtError && (
+              <div className="amount-error">{amtError}</div>
+            )}
+          </div>
+        );
+      })()}
+      <div className="divider" />
+
+      {/* Origin zone */}
+      <div className="zone-label">{(config.zoneLabels && config.zoneLabels.origin) || 'Origin'}</div>
+      <div
+        className={`node-row ${swapAnim ? 'swap-animate' : ''}`}
+        onClick={() => origin.selectable && setSheetTarget('origin')}
+      >
+        <NodeIcon icon={origin.icon} iconColor={origin.iconColor} />
+        <div className="node-info">
+          <div className="node-name">{origin.name}</div>
+          <div className="node-sub">{origin.sub}</div>
+        </div>
+        <div className="node-right">
+          <div className="node-right-val">{origin.rightVal}</div>
+          {origin.rightSub && <div className="node-right-sub">{origin.rightSub}</div>}
+        </div>
+        {origin.selectable && <div className="node-chevron">›</div>}
+      </div>
+      <div className="divider" />
+
+      {/* Connector — zero-height overlay so it doesn't shift click targets */}
+      <div className="connector-section">
+        <div
+          className={`connector-btn ${config.swappable ? 'swappable' : ''}`}
+          onClick={config.swappable ? handleSwap : undefined}
+          title={config.swappable ? 'Swap origin and destination' : undefined}
+        >
+          {config.swappable ? '⇅' : '↓'}
+        </div>
+      </div>
+      <div className="divider" />
+
+      {/* Destination zone */}
+      <div className="zone-label">{(config.zoneLabels && config.zoneLabels.destination) || 'Destination'}</div>
+      <div
+        className={`node-row ${swapAnim ? 'swap-animate' : ''}`}
+        onClick={() => destination.selectable && setSheetTarget('destination')}
+      >
+        <NodeIcon icon={destination.icon} iconColor={destination.iconColor} />
+        <div className="node-info">
+          <div className="node-name">{destination.name}</div>
+          <div className="node-sub">{destination.sub}</div>
+        </div>
+        <div className="node-right">
+          <div className="node-right-val">{destination.rightVal}</div>
+          {destination.rightSub && <div className="node-right-sub">{destination.rightSub}</div>}
+        </div>
+        {destination.selectable && <div className="node-chevron">›</div>}
+      </div>
+      <div className="divider" />
+
+      {/* Fee zone */}
+      <div className={`fee-zone ${rateStale && !rateRefreshing ? 'stale' : ''}`}>
+        <div className="fee-left">
+          <div className="fee-label">
+            {rateStale ? 'Rate expired' : config.feeLabel}
+          </div>
+          {rateRefreshing ? (
+            <div className="fee-shimmer" />
+          ) : (
+            <div className="fee-value">
+              {rateStale ? (
+                <span style={{ color: T.warning, fontSize: 12, cursor: 'pointer' }} onClick={handleRefreshRate}>
+                  Tap to refresh
+                </span>
+              ) : config.feeValue}
+            </div>
+          )}
+        </div>
+        <div className="fee-right">
+          {config.isLiveRate && !rateStale && !rateRefreshing && (
+            <>
+              <div className="live-dot" />
+              <span>Updated {rateAge}s ago</span>
+            </>
+          )}
+          {config.isLiveRate && rateStale && !rateRefreshing && (
+            <span style={{ color: T.warning }}>Rate expired</span>
+          )}
+          {rateRefreshing && <div className="fee-shimmer" style={{ width: 60 }} />}
+          {!config.isLiveRate && <span>{config.feeTiming}</span>}
+        </div>
+      </div>
+      <div className="divider" />
+
+      {/* Receive summary */}
+      <div className="receive-zone">
+        <div className="receive-label">{config.receiveLabel}</div>
+        <div className="receive-right">
+          <div className="receive-value">{rateRefreshing ? '—' : receiveVal}</div>
+          {receiveSub && <div className="receive-sub">{receiveSub}</div>}
+        </div>
+      </div>
+      <div className="divider" />
+
+      {/* Tap-outside backdrop — dismisses keypad when tapping above the panel */}
+      <div
+        className={`keypad-backdrop ${keypadOpen ? 'open' : ''}`}
+        onMouseDown={() => setKeypadOpen(false)}
+      />
+
+      {/* Floating keypad + CTA panel — keypad grows upward from bottom over lower content */}
+      <div className="keypad-cta-panel">
+        {!config.isAmountReadOnly && (
+          <>
+            <div className={`keypad-dismiss-bar ${keypadOpen ? 'open' : ''}`}>
+              <button
+                className="keypad-done-btn"
+                onMouseDown={e => { e.preventDefault(); setKeypadOpen(false); }}
+              >
+                Done
+              </button>
+            </div>
+            <div className={`keypad-slide ${keypadOpen ? 'open' : ''}`}>
+              <div className="keypad">
+                {['1','2','3','4','5','6','7','8','9','.','0','⌫'].map((k, i) => (
+                  <button
+                    key={i}
+                    className={`keypad-key ${k === '⌫' ? 'backspace' : ''}`}
+                    onMouseDown={e => { e.preventDefault(); handleKey(k); }}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+        <div className="cta-zone">
+          <button
+            className="cta-btn"
+            disabled={ctaDisabled}
+          >
+            {rateStale ? 'Refresh rate to continue' : config.ctaLabel}
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom sheet for node selection */}
+      {sheetTarget === 'origin' && (
+        <BottomSheet
+          open={true}
+          onClose={() => setSheetTarget(null)}
+          title="Select origin"
+          items={origin.options || []}
+          selectedId={origin.id}
+          onSelect={item => setOrigin(item)}
+        />
+      )}
+      {sheetTarget === 'destination' && (
+        <BottomSheet
+          open={true}
+          onClose={() => setSheetTarget(null)}
+          title="Select destination"
+          items={destination.options || []}
+          selectedId={destination.id}
+          onSelect={item => setDestination(item)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── REVIEWER SHELL ─── */
+function App() {
+  const [activeId, setActiveId] = useState(USE_CASES[0].id);
+  const [fadingOut, setFadingOut] = useState(false);
+  const [displayedId, setDisplayedId] = useState(USE_CASES[0].id);
+
+  const switchTo = useCallback((id) => {
+    if (id === activeId) return;
+    setFadingOut(true);
+    setTimeout(() => {
+      setDisplayedId(id);
+      setActiveId(id);
+      setFadingOut(false);
+    }, 150);
+  }, [activeId]);
+
+  const activeUC = USE_CASES.find(uc => uc.id === displayedId) || USE_CASES[0];
+
+  // Test hook for prototype reviewer navigation
+  useEffect(() => { window.__selectUseCase = switchTo; }, [switchTo]);
+
+  return (
+    <div className="reviewer-shell">
+      <div className="reviewer-title">Uphold Payment Widget · Amount Selection</div>
+
+      <GroupedDropdown useCases={USE_CASES} activeId={activeId} onChange={switchTo} />
+
+      {activeUC.annotation && <PrototypeAnnotation text={activeUC.annotation} />}
+
+      <div className="screen-stage">
+        <div className="screen-fade" style={{ opacity: fadingOut ? 0 : 1 }}>
+          <TransactionWidget key={activeUC.id} config={activeUC} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

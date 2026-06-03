@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Widget Prototypes — Uphold</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #090D14;
+    color: #F0F2FA;
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+  .header { margin-bottom: 40px; }
+  .title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #8494BD;
+    margin-bottom: 8px;
+  }
+  .heading {
+    font-size: 28px;
+    font-weight: 700;
+    color: #F0F2FA;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    max-width: 960px;
+  }
+  .card {
+    display: block;
+    background: #1D2738;
+    border: 0.5px solid #35415F;
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .card:hover {
+    border-color: #84FB7F;
+    background: #273149;
+  }
+  .card-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #84FB7F;
+    margin-bottom: 6px;
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #F0F2FA;
+    margin-bottom: 4px;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: #8494BD;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">Uphold</div>
+    <div class="heading">Widget Prototypes</div>
+  </div>
+  <div class="grid">
+    <a class="card" href="amount-selection.html">
+      <div class="card-label">Payment Widget</div>
+      <div class="card-title">Amount Selection</div>
+      <div class="card-desc">9 use cases — deposits, withdrawals, swap, transfer, send. Interactive keypad, live rate counter, denomination flip.</div>
+    </a>
+    <a class="card" href="card-happy-path-flow.html">
+      <div class="card-label">Payment Widget</div>
+      <div class="card-title">Card Happy Path Flow</div>
+      <div class="card-desc">End-to-end card deposit flow prototype.</div>
+    </a>
+    <a class="card" href="widget-skeleton.html">
+      <div class="card-label">Payment Widget</div>
+      <div class="card-title">Loading Skeleton</div>
+      <div class="card-desc">Shimmer skeleton loading states for the widget.</div>
+    </a>
+  </div>
+</body>
+</html>
