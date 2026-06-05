@@ -1101,11 +1101,16 @@ const T = {
   icCoralBg: '#FFE8E3', icCoralTxt: '#B02E18',
 };
 
+const WIDGET_CONFIG = {
+  brandName: 'Uphold',
+  showPoweredBy: true,
+};
+
 /* ─── USE CASES DATA ─── */
 const USE_CASES = [
   {
     id: 'deposit-card', label: 'Card deposit', title: 'Add funds',
-    screenType: 'amount-selection', quoteExpiry: false,
+    screenType: 'amount-selection', quoteExpiry: true,
     group: 'Deposits', isAmountReadOnly: false,
     supportsAnythingToAnything: true,
     origin: {
@@ -1231,51 +1236,21 @@ const USE_CASES = [
   },
   {
     id: 'deposit-crypto', label: 'Crypto deposit', title: 'Add funds',
-    screenType: 'amount-selection', quoteExpiry: false,
+    screenType: 'crypto-address', quoteExpiry: false,
     group: 'Deposits', isAmountReadOnly: false,
-    origin: {
-      id: 'btc-ext', name: 'bc1q...x7f2', sub: 'External · BTC address',
-      icon: '⬡', iconColor: 'gray', rightVal: 'External wallet', rightSub: null, selectable: true,
-      type: 'external',
-      options: [
-        { id: 'btc-ext', name: 'bc1q...x7f2', sub: 'External · BTC address', icon: '⬡', iconColor: 'gray', rightVal: 'External wallet', rightSub: null },
-        { id: 'btc-ext2', name: 'bc1p...k3m9', sub: 'External · BTC address', icon: '⬡', iconColor: 'gray', rightVal: 'External wallet', rightSub: null },
-      ]
-    },
-    destination: {
-      id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto',
-      icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance', selectable: true,
-      type: 'internal',
-      options: [
-        { id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance' },
-        { id: 'eth-main', name: 'Ethereum', sub: 'Internal · crypto', icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'current balance' },
-      ]
-    },
-    swappable: false,
-    defaultAmount: '0.05', defaultUnit: 'BTC', canFlip: true, hasMax: false,
-    equivLine: (amt, flipped) => flipped ? null : `≈ $${(parseFloat(amt||0)*56043.2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`,
-    equivLineFlipped: (amt) => `≈ ${(parseFloat(amt||0)/56043.2).toFixed(5)} BTC`,
-    fiatRate: 56043.2, assetUnit: 'BTC', fiatUnit: 'USD',
-    feeLabel: 'Network fee', feeValue: 'Paid by sender', feeTiming: 'Est. 10–30 min',
-    receiveLabel: 'Account receives',
-    receiveValue: (amt, flipped) => {
-      const btc = flipped ? (parseFloat(amt)||0)/56043.2 : parseFloat(amt)||0;
-      return `${btc.toFixed(5)} BTC`;
-    },
-    receiveSub: (amt, flipped) => {
-      const btc = flipped ? (parseFloat(amt)||0)/56043.2 : parseFloat(amt)||0;
-      return `≈ $${(btc*56043.2).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} at current rate`;
-    },
-    ctaLabel: 'Add funds',
-    availableBalance: 999, availableUnit: 'BTC',
-    isLiveRate: false,
+    infoBanner: 'Send BTC to this address from your external wallet. Only send BTC — sending other assets may result in permanent loss.',
+    address: 'bc1qxy2kgdygjrsqtzq2n0yrf249ppqqkf6z58h3jj',
+    network: 'Bitcoin (BTC)',
+    confirmationTime: 'Est. 10–30 min (3 confirmations)',
+    destinationAccount: { name: 'Bitcoin', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance' },
+    ctaLabel: 'Close',
   },
   /* ── FPS withdrawal ── */
   {
     id: 'fps-withdrawal', label: 'Bank withdrawal — FPS', title: 'Withdraw',
     screenType: 'amount-selection', rail: 'fps', quoteExpiry: true,
     group: 'Withdrawals', isAmountReadOnly: false,
-    supportsAnythingToAnything: true,
+    supportsAnythingToAnything: false,
     origin: {
       id: 'gbp-main', name: 'GBP account', sub: 'Internal · fiat',
       icon: '£', iconColor: 'teal', rightVal: '£1,560.00', rightSub: 'available', selectable: true,
@@ -1291,9 +1266,6 @@ const USE_CASES = [
       options: [
         { id: 'lloyds-4821', name: 'Lloyds Bank', sub: 'Sort code 30-00-00 · ···4821', icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null, assetType: 'fiat' },
         { id: 'hsbc-7721', name: 'HSBC', sub: 'Sort code 40-02-50 · ···7721', icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null, assetType: 'fiat' },
-        { id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance', assetType: 'crypto' },
-        { id: 'eth-main', name: 'Ethereum', sub: 'Internal · crypto', icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'current balance', assetType: 'crypto' },
-        { id: 'sol-main', name: 'Solana', sub: 'Internal · crypto', icon: '◎', iconColor: 'teal', rightVal: '6.50 SOL', rightSub: 'current balance', assetType: 'crypto' },
       ]
     },
     swappable: false,
@@ -1312,7 +1284,7 @@ const USE_CASES = [
     id: 'sepa-withdrawal', label: 'Bank withdrawal — SEPA', title: 'Withdraw',
     screenType: 'amount-selection', rail: 'sepa', quoteExpiry: true,
     group: 'Withdrawals', isAmountReadOnly: false,
-    supportsAnythingToAnything: true,
+    supportsAnythingToAnything: false,
     origin: {
       id: 'eur-main', name: 'EUR account', sub: 'Internal · fiat',
       icon: '€', iconColor: 'teal', rightVal: '€1,820.00', rightSub: 'available', selectable: true,
@@ -1327,9 +1299,6 @@ const USE_CASES = [
       type: 'external', assetType: 'fiat',
       options: [
         { id: 'iban-de89', name: 'Deutsche Bank', sub: 'IBAN DE89370400440532013000', icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null, assetType: 'fiat' },
-        { id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance', assetType: 'crypto' },
-        { id: 'eth-main', name: 'Ethereum', sub: 'Internal · crypto', icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'current balance', assetType: 'crypto' },
-        { id: 'sol-main', name: 'Solana', sub: 'Internal · crypto', icon: '◎', iconColor: 'teal', rightVal: '6.50 SOL', rightSub: 'current balance', assetType: 'crypto' },
       ]
     },
     swappable: false,
@@ -1348,7 +1317,7 @@ const USE_CASES = [
     id: 'ach-withdrawal', label: 'Bank withdrawal — ACH', title: 'Withdraw',
     screenType: 'amount-selection', rail: 'ach', quoteExpiry: true,
     group: 'Withdrawals', isAmountReadOnly: false,
-    supportsAnythingToAnything: true,
+    supportsAnythingToAnything: false,
     origin: {
       id: 'usd-main', name: 'USD account', sub: 'Internal · fiat',
       icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'available', selectable: true,
@@ -1364,9 +1333,6 @@ const USE_CASES = [
       options: [
         { id: 'chase-4821', name: 'Chase Checking', sub: 'Account · ···4821', icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null, assetType: 'fiat' },
         { id: 'wells-2210', name: 'Wells Fargo', sub: 'Account · ···2210', icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null, assetType: 'fiat' },
-        { id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance', assetType: 'crypto' },
-        { id: 'eth-main', name: 'Ethereum', sub: 'Internal · crypto', icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'current balance', assetType: 'crypto' },
-        { id: 'sol-main', name: 'Solana', sub: 'Internal · crypto', icon: '◎', iconColor: 'teal', rightVal: '6.50 SOL', rightSub: 'current balance', assetType: 'crypto' },
       ]
     },
     swappable: false,
@@ -1385,7 +1351,7 @@ const USE_CASES = [
     id: 'fednow-withdrawal', label: 'Bank withdrawal — FedNow/RTP', title: 'Withdraw',
     screenType: 'amount-selection', rail: 'fednow', quoteExpiry: true,
     group: 'Withdrawals', isAmountReadOnly: false,
-    supportsAnythingToAnything: true,
+    supportsAnythingToAnything: false,
     origin: {
       id: 'usd-main', name: 'USD account', sub: 'Internal · fiat',
       icon: '$', iconColor: 'teal', rightVal: '$2,400.00', rightSub: 'available', selectable: true,
@@ -1401,9 +1367,6 @@ const USE_CASES = [
       options: [
         { id: 'chase-4821', name: 'Chase Checking', sub: 'Account · ···4821', icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null, assetType: 'fiat' },
         { id: 'wells-2210', name: 'Wells Fargo', sub: 'Account · ···2210', icon: '🏦', iconColor: 'gray', rightVal: 'Destination', rightSub: null, assetType: 'fiat' },
-        { id: 'btc-main', name: 'Bitcoin', sub: 'Internal · crypto', icon: '₿', iconColor: 'amber', rightVal: '0.14820 BTC', rightSub: 'current balance', assetType: 'crypto' },
-        { id: 'eth-main', name: 'Ethereum', sub: 'Internal · crypto', icon: 'Ξ', iconColor: 'purple', rightVal: '1.840 ETH', rightSub: 'current balance', assetType: 'crypto' },
-        { id: 'sol-main', name: 'Solana', sub: 'Internal · crypto', icon: '◎', iconColor: 'teal', rightVal: '6.50 SOL', rightSub: 'current balance', assetType: 'crypto' },
       ]
     },
     swappable: false,
@@ -1551,7 +1514,7 @@ const USE_CASES = [
 
   {
     id: 'transfer', label: 'Transfer', title: 'Transfer',
-    screenType: 'amount-selection', quoteExpiry: true,
+    screenType: 'amount-selection', quoteExpiry: false,
     group: 'Other', isAmountReadOnly: false,
     origin: {
       id: 'btc-main', name: 'Bitcoin · main', sub: 'Internal · crypto',
@@ -1634,6 +1597,7 @@ const USE_CASES = [
     id: 'receive', label: 'Receive', title: 'Receive',
     screenType: 'amount-selection', quoteExpiry: false,
     group: 'Other', isAmountReadOnly: true,
+    annotation: 'Open decision: does the recipient need to explicitly accept this transfer, or is receipt automatic? If automatic, this screen belongs in the order status flow — not the amount selection flow. Resolve before implementation.',
     origin: {
       id: 'jane-doe', name: 'Jane Doe', sub: 'User · @janedoe',
       icon: 'JD', iconColor: 'coral', rightVal: 'Sender', rightSub: null, selectable: false,
@@ -1713,7 +1677,7 @@ function SheetItem({ item, selectedId, onSelect, showConversionBadge }) {
   );
 }
 
-function BottomSheet({ open, onClose, title, items, selectedId, onSelect, grouped }) {
+function BottomSheet({ open, onClose, title, items, selectedId, onSelect, grouped, customContent }) {
   const [closing, setClosing] = useState(false);
 
   const handleClose = () => {
@@ -1736,7 +1700,7 @@ function BottomSheet({ open, onClose, title, items, selectedId, onSelect, groupe
         <div className="sheet-handle" />
         <div className="sheet-title">{title}</div>
         <div className="sheet-list">
-          {grouped ? (
+          {customContent ? customContent : grouped ? (
             <>
               {fiatItems.length > 0 && <>
                 <div style={{fontSize:10, fontWeight:700, letterSpacing:'1.5px', textTransform:'uppercase', color:T.green, padding:'8px 16px 4px'}}>Fiat accounts</div>
@@ -1753,6 +1717,139 @@ function BottomSheet({ open, onClose, title, items, selectedId, onSelect, groupe
         </div>
       </div>
     </>
+  );
+}
+
+/* ─── CRYPTO ADDRESS WIDGET ─── */
+function CryptoAddressWidget({ config }) {
+  const [copyLabel, setCopyLabel] = useState('Copy address');
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimerRef = useRef(null);
+
+  const handleCopy = (e) => {
+    e.preventDefault();
+    navigator.clipboard.writeText(config.address).catch(() => {});
+    setCopyLabel('Copied ✓');
+    clearTimeout(toastTimerRef.current);
+    setToastVisible(true);
+    setTimeout(() => setCopyLabel('Copy address'), 1400);
+    toastTimerRef.current = setTimeout(() => setToastVisible(false), 2000);
+  };
+
+  const ic = config.destinationAccount ? iconColors(config.destinationAccount.iconColor) : iconColors('amber');
+
+  return (
+    <div className="widget-frame" style={{ position: 'relative' }}>
+      {/* Status bar */}
+      <div className="status-bar">
+        <span className="status-time">9:41</span>
+        <div className="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+      </div>
+
+      {/* Nav bar */}
+      <div className="nav-bar">
+        <div className="nav-close" style={{ fontSize: 16 }}>←</div>
+        <div className="nav-title">{config.title || 'Add funds'}</div>
+        <div className="nav-spacer" />
+      </div>
+
+      {/* Info banner */}
+      {config.infoBanner && (
+        <div style={{ margin: '0 16px', padding: 12, background: '#FFF8EC', border: '0.5px solid #FAC461', borderRadius: 8, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <span style={{ fontSize: 14, color: '#FAC461', flexShrink: 0 }}>ℹ</span>
+          <span style={{ fontSize: 13, color: T.textPrimary, lineHeight: 1.4 }}>{config.infoBanner}</span>
+        </div>
+      )}
+
+      {/* QR placeholder */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '16px auto' }}>
+        <div style={{
+          width: 128, height: 128,
+          background: T.surfaceRaised,
+          border: `0.5px solid ${T.line}`,
+          borderRadius: 8,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span style={{ fontSize: 12, color: T.textMuted }}>QR code</span>
+        </div>
+        <span style={{ fontSize: 11, color: T.textMuted, marginTop: 8 }}>Scan with your wallet app</span>
+      </div>
+
+      {/* Address zone */}
+      <div style={{ padding: '0 16px', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: 13, color: T.textPrimary, wordBreak: 'break-all', textAlign: 'center' }}>
+          {config.address}
+        </div>
+        <button
+          onMouseDown={handleCopy}
+          style={{ fontSize: 13, color: T.green, background: 'none', border: 'none', cursor: 'pointer', marginTop: 6 }}
+        >
+          {copyLabel}
+        </button>
+      </div>
+
+      {/* Network zone */}
+      <div style={{ padding: '0 24px', marginTop: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+          <span style={{ fontSize: 12, color: T.textMuted }}>Network</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{config.network}</span>
+        </div>
+        <div style={{ height: '0.5px', background: T.line }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
+          <span style={{ fontSize: 12, color: T.textMuted }}>Confirmation time</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{config.confirmationTime}</span>
+        </div>
+      </div>
+
+      {/* Destination zone */}
+      {config.destinationAccount && (
+        <div style={{ padding: '0 16px', marginTop: 8 }}>
+          <div className="zone-label">RECEIVING ACCOUNT</div>
+          <div style={{ background: T.cardBg, borderRadius: 12, padding: 12, display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: ic.bg, color: ic.txt, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+              {config.destinationAccount.icon}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: T.textPrimary }}>{config.destinationAccount.name}</div>
+              <div style={{ fontSize: 12, color: T.textMuted }}>{config.destinationAccount.sub}</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: T.textPrimary }}>{config.destinationAccount.rightVal}</span>
+              {config.destinationAccount.rightSub && <span style={{ fontSize: 11, color: T.textMuted }}>{config.destinationAccount.rightSub}</span>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      <div style={{
+        position: 'absolute', bottom: 88, left: 32, right: 32,
+        textAlign: 'center',
+        opacity: toastVisible ? 1 : 0,
+        transform: toastVisible ? 'translateY(0)' : 'translateY(10px)',
+        transition: 'opacity 0.2s, transform 0.2s',
+        background: T.surfaceRaised, border: `0.5px solid ${T.line}`, borderRadius: 9999,
+        padding: '8px 16px', fontSize: 13, color: T.textPrimary, zIndex: 20, pointerEvents: 'none',
+      }}>
+        Copied to clipboard
+      </div>
+
+      {/* CTA zone */}
+      <div className="keypad-cta-panel">
+        <div className="cta-zone">
+          <button className="cta-btn">{config.ctaLabel || 'Close'}</button>
+        </div>
+        <div className="cta-legal">
+          You accept the <span className="link">Terms and Conditions</span> and <span className="link">Privacy Policy</span>.
+        </div>
+        {WIDGET_CONFIG.showPoweredBy && (
+          <div className="powered-by">
+            <span style={{ fontSize: 16 }}>🌿</span>
+            <span className="powered-by-text">Powered by <strong>{WIDGET_CONFIG.brandName}</strong></span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1987,6 +2084,13 @@ function useTransactionState(config, initialOrigin, initialDest) {
 
   const currentUnit = flipped ? getAssetUnit(destination) : getAssetUnit(origin);
 
+  const activeQuickAmount = (() => {
+    const sym = getCurrencySymbol(currentUnit);
+    const pills = getQuickAmounts(currentUnit);
+    const displayVal = sym ? `${sym}${rawAmount}` : rawAmount;
+    return pills.find(p => p === displayVal) || null;
+  })();
+
   const amountInOriginUnits = flipped
     ? String((parseFloat(rawAmount)||0) * (rate||1))
     : rawAmount;
@@ -2003,6 +2107,7 @@ function useTransactionState(config, initialOrigin, initialDest) {
     isConversion, rate, rateAge, rateLoading, rateStale, refreshRate,
     calloutDismissed, setCalloutDismissed,
     currentUnit,
+    activeQuickAmount,
     setOrigin: setOriginNode,
     setDestination: handleSetDestination,
     amountInOriginUnits, amountInDestinationUnits,
@@ -2052,6 +2157,7 @@ function TransactionWidget({ config }) {
     isConversion, rate, rateAge: convRateAge, rateLoading, rateStale: convRateStale, refreshRate,
     calloutDismissed, setCalloutDismissed,
     currentUnit: hookCurrentUnit,
+    activeQuickAmount,
     setOrigin, setDestination,
   } = txState;
 
@@ -2063,6 +2169,7 @@ function TransactionWidget({ config }) {
   const [quoteRateStale, setQuoteRateStale] = useState(false);
   const [rateRefreshing, setRateRefreshing] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [unsettledSheetOpen, setUnsettledSheetOpen] = useState(false);
   useEffect(() => { window.__setApiError = setApiError; return () => { window.__setApiError = null; }; }, []);
   const quoteRateStaleRef = useRef(quoteRateStale);
   quoteRateStaleRef.current = quoteRateStale;
@@ -2082,7 +2189,8 @@ function TransactionWidget({ config }) {
   }, [config.id, config.quoteExpiry, isConversion]);
 
   // When entering conversion mode, stop the State A quote timer from blocking CTA
-  const effectiveQuoteStale = isConversion ? false : quoteRateStale;
+  const showQuoteCountdown = config.quoteExpiry && (isConversion || config.isLiveRate);
+  const effectiveQuoteStale = isConversion ? false : (showQuoteCountdown ? quoteRateStale : false);
 
   const handleRefreshQuote = () => {
     if (!quoteRateStale) return;
@@ -2269,13 +2377,13 @@ function TransactionWidget({ config }) {
     return config.feeValue;
   })();
   const settlementValue = (() => {
-    if (config.quoteExpiry && !effectiveQuoteStale && !rateRefreshing) return (
+    if (showQuoteCountdown && !effectiveQuoteStale && !rateRefreshing) return (
       <span style={{ display:'flex', alignItems:'center', gap: 4 }}>
         <span className="live-dot" style={{ display:'inline-block' }} />
         <span style={{ color: quoteRemaining <= 10 ? T.warning : T.textMuted }}>Quote valid for {quoteRemaining}s</span>
       </span>
     );
-    if (config.quoteExpiry && effectiveQuoteStale) return <span style={{ color: T.warning }}>Quote expired</span>;
+    if (showQuoteCountdown && effectiveQuoteStale) return <span style={{ color: T.warning }}>Quote expired</span>;
     return config.feeTiming;
   })();
 
@@ -2349,6 +2457,12 @@ function TransactionWidget({ config }) {
             <button
               key={q}
               className="quick-pill"
+              style={{
+                background: q === activeQuickAmount ? T.green : undefined,
+                color: q === activeQuickAmount ? '#090D14' : undefined,
+                borderColor: q === activeQuickAmount ? T.green : undefined,
+                transition: 'background 0.12s, color 0.12s',
+              }}
               onMouseDown={e => { e.preventDefault(); setRawAmount(parseQuickAmount(q)); setKeypadOpen(false); }}
             >
               {q}
@@ -2527,12 +2641,19 @@ function TransactionWidget({ config }) {
 
       {/* Unsettled info row — stays inside frame so it reads in-context */}
       {apiError && apiError.type === 'unsettled' && (
-        <div style={{ margin: '6px 16px 0', padding: '8px 12px', background: T.surfaceRaised, borderRadius: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 14 }}>🕐</span>
-          <span
-            style={{ fontSize: 12, color: T.textSecondary, cursor: 'pointer', textDecoration: 'underline' }}
-            onClick={() => alert('Some funds are still settling from a recent deposit. Settling funds become available once confirmed by the network or bank.')}
-          >Why are my funds locked?</span>
+        <div
+          onClick={() => setUnsettledSheetOpen(true)}
+          style={{
+            marginTop: 8, padding: '8px 12px',
+            background: T.surfaceRaised, borderRadius: 6,
+            border: `0.5px solid ${T.line}`,
+            display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+            margin: '8px 16px 0',
+          }}
+        >
+          <span style={{ fontSize: 14, color: T.textMuted }}>🕐</span>
+          <span style={{ fontSize: 12, color: T.textSecondary }}>Why are my funds locked?</span>
+          <span style={{ fontSize: 12, color: T.textMuted, marginLeft: 'auto' }}>›</span>
         </div>
       )}
 
@@ -2568,15 +2689,14 @@ function TransactionWidget({ config }) {
           </button>
         </div>
         <div className="cta-legal">
-          By continuing, I am accepting Uphold's{' '}
-          <span className="link">Terms and Conditions</span>{' '}
-          and{' '}
-          <span className="link">Privacy Policy</span>.
+          You accept the <span className="link">Terms and Conditions</span> and <span className="link">Privacy Policy</span>.
         </div>
-        <div className="powered-by">
-          <span style={{ fontSize: 16 }}>🌿</span>
-          <span className="powered-by-text">Powered by <strong>Uphold</strong></span>
-        </div>
+        {WIDGET_CONFIG.showPoweredBy && (
+          <div className="powered-by">
+            <span style={{ fontSize: 16 }}>🌿</span>
+            <span className="powered-by-text">Powered by <strong>{WIDGET_CONFIG.brandName}</strong></span>
+          </div>
+        )}
       </div>
 
       {/* Bottom sheets */}
@@ -2588,6 +2708,36 @@ function TransactionWidget({ config }) {
         <BottomSheet open={true} onClose={() => setSheetTarget(null)} title="Select destination"
           items={config.destination.options||[]} selectedId={destination.id} onSelect={item => setDestination(item)}
           grouped={!!config.supportsAnythingToAnything} />
+      )}
+      {unsettledSheetOpen && (
+        <BottomSheet
+          open={true}
+          onClose={() => setUnsettledSheetOpen(false)}
+          title="Funds are settling"
+          items={[]}
+          selectedId={null}
+          onSelect={() => {}}
+          customContent={(
+            <div style={{ padding: '0 16px 16px' }}>
+              <p style={{ fontSize: 13, color: T.textSecondary, lineHeight: 1.6, marginBottom: 16 }}>
+                When you deposit via bank transfer (ACH), funds take 1–3 business days to settle. During this time, the deposited amount is locked and cannot be withdrawn.
+              </p>
+              <p style={{ fontSize: 13, color: T.textSecondary, lineHeight: 1.6, marginBottom: 16 }}>
+                This protects against fraud and ensures the deposit clears successfully.
+              </p>
+              <p style={{ fontSize: 13, color: T.textSecondary, lineHeight: 1.6 }}>
+                Your funds will be available on {apiError?.settlementAt || 'Jun 12'}.
+              </p>
+              <button
+                onMouseDown={e => { e.preventDefault(); setUnsettledSheetOpen(false); }}
+                className="cta-btn"
+                style={{ marginTop: 24, borderRadius: 9999 }}
+              >
+                Got it
+              </button>
+            </div>
+          )}
+        />
       )}
     </div>
   );
@@ -2718,15 +2868,14 @@ function BankInstructionWidget({ config }) {
           <button className="cta-btn">{config.ctaLabel || 'Close'}</button>
         </div>
         <div className="cta-legal">
-          By continuing, I am accepting Uphold's{' '}
-          <span className="link">Terms and Conditions</span>{' '}
-          and{' '}
-          <span className="link">Privacy Policy</span>.
+          You accept the <span className="link">Terms and Conditions</span> and <span className="link">Privacy Policy</span>.
         </div>
-        <div className="powered-by">
-          <span style={{ fontSize: 16 }}>🌿</span>
-          <span className="powered-by-text">Powered by <strong>Uphold</strong></span>
-        </div>
+        {WIDGET_CONFIG.showPoweredBy && (
+          <div className="powered-by">
+            <span style={{ fontSize: 16 }}>🌿</span>
+            <span className="powered-by-text">Powered by <strong>{WIDGET_CONFIG.brandName}</strong></span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2738,7 +2887,7 @@ const DEMO_ERRORS = [
   { key: 'max',       label: 'Max',       error: { type: 'max',       message: 'Maximum amount is $5,000.',              maxAmount: 5000  } },
   { key: 'daily',     label: 'Daily',     error: { type: 'daily',     message: 'Daily limit reached. $1,200.00 remaining today.',    maxAmount: 1200  } },
   { key: 'weekly',    label: 'Weekly',    error: { type: 'weekly',    message: 'Weekly limit reached. $3,500.00 remaining this week.', maxAmount: 3500 } },
-  { key: 'unsettled', label: 'Unsettled', error: { type: 'unsettled', message: 'Funds settling. $300.00 available on Jun 12.' } },
+  { key: 'unsettled', label: 'Unsettled', error: { type: 'unsettled', message: 'Funds settling. $300.00 available on Jun 12.', settlementAt: 'Jun 12' } },
 ];
 
 function DemoPanel({ activeError, onSet }) {
@@ -2847,12 +2996,14 @@ function App() {
         <div className="screen-fade" style={{ opacity: fadingOut ? 0 : 1 }}>
           {activeUC.screenType === 'bank-instruction'
             ? <BankInstructionWidget key={activeUC.id} config={activeUC} />
-            : <TransactionWidget key={activeUC.id} config={activeUC} />
+            : activeUC.screenType === 'crypto-address'
+              ? <CryptoAddressWidget key={activeUC.id} config={activeUC} />
+              : <TransactionWidget key={activeUC.id} config={activeUC} />
           }
         </div>
 
         {/* Demo panel — only on amount-selection screens, outside the phone frame */}
-        {activeUC.screenType !== 'bank-instruction' && (
+        {activeUC.screenType === 'amount-selection' && (
           <DemoPanel
             activeError={demoError}
             onSet={err => {
