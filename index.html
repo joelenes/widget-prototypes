@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Widget Prototypes — Uphold</title>
+<title>Prototypes — Uphold</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -13,7 +13,7 @@
     min-height: 100vh;
     padding: 48px 24px;
   }
-  .header { margin-bottom: 40px; }
+  .header { margin-bottom: 32px; }
   .title {
     font-size: 11px;
     font-weight: 700;
@@ -27,12 +27,37 @@
     font-weight: 700;
     color: #F0F2FA;
   }
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid #1D2738;
+    margin-bottom: 32px;
+    max-width: 960px;
+  }
+  .tab {
+    appearance: none;
+    background: none;
+    border: none;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #8494BD;
+    padding: 10px 4px;
+    margin-right: 24px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab:hover { color: #F0F2FA; }
+  .tab.is-active { color: #84FB7F; border-bottom-color: #84FB7F; }
+  .tab:focus-visible { outline: 2px solid #84FB7F; outline-offset: 2px; border-radius: 4px; }
   .grid {
-    display: grid;
+    display: none;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
     max-width: 960px;
   }
+  .grid.is-active { display: grid; }
   .card {
     display: block;
     background: #1D2738;
@@ -70,9 +95,15 @@
 <body>
   <div class="header">
     <div class="title">Uphold</div>
-    <div class="heading">Widget Prototypes</div>
+    <div class="heading">Prototypes</div>
   </div>
-  <div class="grid">
+
+  <div class="tabs" role="tablist" aria-label="Prototype groups">
+    <button class="tab is-active" role="tab" aria-selected="true" aria-controls="panel-widget" id="tab-widget" data-tab="widget">Widget</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-topper" id="tab-topper" data-tab="topper" tabindex="-1">Topper</button>
+  </div>
+
+  <div class="grid is-active" id="panel-widget" role="tabpanel" aria-labelledby="tab-widget">
     <a class="card" href="fee-recalculation-loading.html">
       <div class="card-label">Payment Widget · Latest</div>
       <div class="card-title">Fee Recalculation Loading</div>
@@ -99,5 +130,45 @@
       <div class="card-desc">Shimmer skeleton loading states for the widget.</div>
     </a>
   </div>
+
+  <div class="grid" id="panel-topper" role="tabpanel" aria-labelledby="tab-topper" hidden>
+    <a class="card" href="order-review-topper.html">
+      <div class="card-label">Topper · Latest</div>
+      <div class="card-title">Order Review — Recurring Buy</div>
+      <div class="card-desc">Review order screen + "Set up recurring buy" bottom sheet — weekly/monthly discount, radiogroup a11y, focus trap.</div>
+    </a>
+  </div>
+
+  <script>
+    const tabs = Array.from(document.querySelectorAll('.tab'));
+    const panels = { widget: document.getElementById('panel-widget'), topper: document.getElementById('panel-topper') };
+
+    function activate(name) {
+      tabs.forEach((tab) => {
+        const isActive = tab.dataset.tab === name;
+        tab.classList.toggle('is-active', isActive);
+        tab.setAttribute('aria-selected', String(isActive));
+        tab.tabIndex = isActive ? 0 : -1;
+      });
+      Object.entries(panels).forEach(([name2, panel]) => {
+        const isActive = name2 === name;
+        panel.classList.toggle('is-active', isActive);
+        panel.hidden = !isActive;
+      });
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => activate(tab.dataset.tab));
+    });
+
+    document.querySelector('.tabs').addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      const idx = tabs.indexOf(document.activeElement);
+      const nextIdx = e.key === 'ArrowRight' ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
+      tabs[nextIdx].focus();
+      activate(tabs[nextIdx].dataset.tab);
+    });
+  </script>
 </body>
 </html>
