@@ -34,24 +34,8 @@
     --radius-button: 9999px;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background-level-1: #141c29;
-      --background-level-2: #1d2738;
-      --content-default: #d1d4e5;
-      --content-subdued: #9aa6c9;
-      --content-disabled: #35415f;
-      --content-critical: #fb8c74;
-      --content-info: #7ab2ff;
-      --content-on-primary: #090d14;
-      --border-default: #35415f;
-      --border-subtle: #273149;
-      --action-primary-default: #84fb7f;
-      --action-primary-hover: #6fe68a;
-      --action-neutral-default: #273149;
-      --focus-ring: #7aa7ff;
-    }
-  }
+  /* Always the Neutral light theme, regardless of the viewer's OS/browser
+     preference — this widget doesn't follow prefers-color-scheme. */
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
