@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Swap — Uphold Widget Prototype</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+  :root {
+    /* Leaf Design System tokens — Swap screen (Figma 18612:17818 / 18625:3219) */
+    --background-level-1: #ffffff;
+    --background-level-2: #f5f5f5;
+    --content-default: #474747;
+    /* content/subdued is #8c8c8c in Figma, but that only reaches ~3.4:1 on white —
+       darkened here so 12–14px copy clears WCAG AA (4.5:1). Same for content/critical below. */
+    --content-subdued: #767676;
+    --content-disabled: #b8b8b8;
+    --content-critical: #c93318;
+    --content-info: #2f6fed;
+    --content-on-primary: #f5f5f5;
+    --border-default: #b8b8b8;
+    --border-subtle: #e2e2e2;
+    --action-primary-default: #111111;
+    --action-primary-hover: #2a2a2a;
+    --action-neutral-default: #dbdbdb;
+    --focus-ring: #2f6fed;
+
+    --radius-lg: 16px;
+    --radius-container-nested: 12px;
+    --radius-button: 9999px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background-level-1: #141c29;
+      --background-level-2: #1d2738;
+      --content-default: #d1d4e5;
+      --content-subdued: #9aa6c9;
+      --content-disabled: #35415f;
+      --content-critical: #fb8c74;
+      --content-info: #7ab2ff;
+      --content-on-primary: #090d14;
+      --border-default: #35415f;
+      --border-subtle: #273149;
+      --action-primary-default: #84fb7f;
+      --action-primary-hover: #6fe68a;
+      --action-neutral-default: #273149;
+      --focus-ring: #7aa7ff;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    min-height: 100vh;
+    background: #0b0f17;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--content-default);
+  }
+
+  button { font-family: inherit; }
+  input { font-family: inherit; }
+
+  *:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .stage {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px 56px;
+  }
+
+  .stage-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #5b6885;
+    margin-bottom: 16px;
+  }
+
+  /* ── Frame ── */
+  .frame {
+    width: 393px;
+    height: 700px;
+    background: var(--background-level-2);
+    border-radius: 28px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px 0 20px;
+    flex-shrink: 0;
+  }
+
+  .top-block { display: flex; flex-direction: column; gap: 16px; }
+  .bottom-block { display: flex; flex-direction: column; }
+
+  /* ── Header ── */
+  .swap-header {
+    position: relative;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    margin-bottom: 4px;
+  }
+  .swap-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--content-default);
+  }
+  .close-btn {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: var(--background-level-2);
+    filter: brightness(0.94);
+    color: var(--content-default);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .close-btn:hover { filter: brightness(0.88); }
+
+  /* ── Swap card (AmountInputSwap composite) ── */
+  /* Pure layout wrapper now — no background/radius/shadow of its own. Sell
+     and Buy are each an independent card (see .swap-row below), so there is
+     no shared surface behind them that could ever read as a leftover white
+     box during the swap animation. */
+  .swap-card {
+    margin: 0 16px;
+    position: relative;
+  }
+
+  .swap-row {
+    position: relative;
+    padding: 16px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--background-level-1);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  .swap-row.destination.empty-row { padding-bottom: 16px; gap: 0; }
+
+  /* Swap-direction feedback: both Sell and Buy are already their own
+     background-level-1 card at rest, so nothing about their background ever
+     has to change here — only shadow/radius (elevating further) and
+     transform animate. Origin slides down into the gap, destination slides
+     up into it, so the two cards read as crossing over, not just their
+     text. The now-permanent gap between them (filled by the page's own
+     background) is what used to flicker as "a leftover white box" — now
+     it's just the page showing through, at rest and mid-motion alike. */
+  /* Sell always paints in front of Buy while they cross, regardless of
+     which one is driving the swap. */
+  /* Five stops following a sine-like arc (0, 0.707, 1, 0.707, 0 × peak)
+     instead of a single hard midpoint — velocity stays continuous through
+     the turnaround instead of kinking there, which is what actually reads
+     as "fluid" rather than two mirrored decelerations meeting at a point.
+     A symmetric ease-in-out-sine curve on top of that keeps every leg of
+     the motion (not just the peak) smooth in the same way. */
+  .swap-row.origin.swap-animate { z-index: 4; animation: rowSwapOrigin 300ms ease-in-out; }
+  .swap-row.destination.swap-animate { z-index: 3; animation: rowSwapDestination 300ms ease-in-out; }
+  @keyframes rowSwapOrigin {
+    0%   { transform: translateY(0) scale(1); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+    25%  { transform: translateY(45px) scale(0.972); box-shadow: 0 7px 18px rgba(0, 0, 0, 0.13); }
+    50%  { transform: translateY(64px) scale(0.96); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16); }
+    75%  { transform: translateY(45px) scale(0.972); box-shadow: 0 7px 18px rgba(0, 0, 0, 0.13); }
+    100% { transform: translateY(0) scale(1); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+  }
+  @keyframes rowSwapDestination {
+    0%   { transform: translateY(0) scale(1); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+    25%  { transform: translateY(-45px) scale(0.972); box-shadow: 0 7px 18px rgba(0, 0, 0, 0.13); }
+    50%  { transform: translateY(-64px) scale(0.96); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16); }
+    75%  { transform: translateY(-45px) scale(0.972); box-shadow: 0 7px 18px rgba(0, 0, 0, 0.13); }
+    100% { transform: translateY(0) scale(1); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+  }
+
+  .swap-row-label {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--content-subdued);
+  }
+
+  .swap-row-main {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  /* Default (inactive row): amount is subdued. Active row: full-contrast.
+     Error always wins, regardless of active state. Per Figma 18612:17818. */
+  .amount-currency-prefix {
+    font-size: 28px;
+    line-height: 32px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: var(--content-subdued);
+    flex-shrink: 0;
+  }
+  .amount-currency-prefix.active-row { color: var(--content-default); }
+  .amount-currency-prefix.error { color: var(--content-critical); }
+
+  .amount-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-size: 28px;
+    line-height: 32px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: var(--content-subdued);
+    /* The cursor itself is the focus indicator (tinted via caret-color) — no
+       outline/border box on click, per design: focus must not shift the layout. */
+    caret-color: var(--content-info);
+  }
+  .amount-input.active-row { color: var(--content-default); }
+  .amount-input.compact { font-size: 20px; line-height: 24px; }
+  .amount-input.truncated { text-overflow: ellipsis; }
+  .amount-input.error { color: var(--content-critical); }
+  .amount-input::placeholder { color: var(--content-disabled); }
+  .amount-input:focus, .amount-input:focus-visible { outline: none; }
+
+  .amount-static {
+    flex-shrink: 0;
+    font-size: 28px;
+    line-height: 32px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+  .amount-static.subdued { color: var(--content-disabled); }
+
+  .swap-row-error {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--content-critical);
+    margin-top: -2px;
+  }
+
+  .swap-row-details {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .equiv-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+  /* Sell row only: grows so the balance/Max block lands flush against the
+     card's right edge (per Figma 18612:17818 — "Switch" is flex-[1_0_0],
+     "Account balance" is a fixed 159px block, placed via that asymmetry). */
+  .equiv-row.grow { flex: 1 1 auto; }
+
+  /* Buy row: equiv text + switch icon + "After fees" are three siblings in
+     ONE flex-[1_0_0] group (12px gaps), so they sit together on the left with
+     the leftover space pushed past "After fees" — not between the two. */
+  .buy-equiv-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .equiv-text {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--content-subdued);
+    /* No flex-grow: sizes to its own text so the switch-unit button sits right
+       next to it (per Figma), instead of being pushed to the far edge of the row. */
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .equiv-text.truncated {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: var(--content-subdued);
+  }
+
+  .switch-unit-btn {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--content-subdued);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .switch-unit-btn:hover { background: var(--background-level-2); color: var(--content-default); }
+
+  .row-trailing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .balance-line {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--content-subdued);
+    min-width: 0;
+  }
+  .balance-text {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--content-subdued);
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .balance-text.truncated {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: var(--content-subdued);
+  }
+
+  .max-pill {
+    flex-shrink: 0;
+    height: 22px;
+    padding: 0 10px;
+    border: none;
+    border-radius: var(--radius-button);
+    background: var(--action-neutral-default);
+    color: var(--content-default);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .max-pill:hover { filter: brightness(0.97); }
+
+  .fee-note {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--content-subdued);
+    flex-shrink: 0;
+  }
+
+  /* ── Asset selector ── */
+  .asset-selector { position: relative; flex-shrink: 0; }
+  .asset-selector-trigger {
+    height: 40px;
+    padding: 0 10px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-container-nested);
+    background: var(--background-level-1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--content-default);
+  }
+  .asset-selector-trigger:hover { background: var(--background-level-2); }
+  .asset-selector-trigger.empty {
+    flex: 1 1 auto;
+    min-width: 140px;
+    justify-content: center;
+    border: none;
+    background: var(--action-primary-default);
+    color: var(--content-on-primary);
+  }
+  .asset-selector-trigger.empty:hover { background: var(--action-primary-hover); }
+
+  .asset-ticker { font-size: 14px; line-height: 20px; font-weight: 600; }
+  .select-asset-label { font-size: 16px; line-height: 20px; font-weight: 600; }
+
+  .asset-icon {
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .asset-selector-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 160px;
+    background: var(--background-level-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    z-index: 20;
+    overflow: hidden;
+    list-style: none;
+  }
+  .asset-option {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--content-default);
+    text-align: left;
+  }
+  .asset-option:hover { background: var(--background-level-2); }
+  .asset-option.active { font-weight: 600; }
+  .asset-option-label { flex: 1 1 auto; font-size: 14px; }
+  .asset-option.clear { color: var(--content-subdued); font-size: 13px; }
+  .asset-option-divider { height: 1px; background: var(--border-subtle); margin: 2px 0; }
+
+  /* ── Swap direction connector ──
+     Real height now (the visible gap between the two independent cards,
+     showing the page's own background through it) instead of a zero-height
+     div sitting on a shared seam — the button centers within that gap. */
+  .swap-connector {
+    position: relative;
+    height: 2px;
+  }
+  .swap-direction-btn {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--background-level-1);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--content-default);
+    cursor: pointer;
+    z-index: 5;
+  }
+  .swap-direction-btn:hover:not(:disabled) { background: var(--background-level-2); }
+  .swap-direction-btn:disabled { color: var(--content-disabled); cursor: not-allowed; }
+
+  /* ── Fee breakdown (shown only once an amount is typed) ──
+     Stays mounted at all times; grid-template-rows 0fr→1fr animates its
+     height smoothly in both directions (the row itself, not max-height,
+     so it still adapts if the content's height ever changes mid-transition).
+  */
+  .fee-breakdown-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    margin: 0 16px;
+    transition: grid-template-rows 220ms ease, opacity 150ms ease;
+  }
+  .fee-breakdown-wrap.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transition: grid-template-rows 220ms ease, opacity 180ms ease 40ms;
+  }
+  .fee-breakdown-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .fee-breakdown {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+  }
+  .fee-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 0;
+    font-size: 14px;
+  }
+  .fee-row-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--content-subdued);
+  }
+  .fee-row-value {
+    color: var(--content-default);
+    white-space: nowrap;
+  }
+  .fee-row-label.strong, .fee-row-value.strong {
+    color: var(--content-default);
+    font-weight: 700;
+  }
+  .fee-divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 2px 0;
+  }
+
+  /* ── Exchange rate strip ── */
+  .rate-strip {
+    margin: 4px 16px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--content-subdued);
+  }
+  .rate-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .rate-value-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--content-default);
+    font-weight: 500;
+  }
+  .countdown-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--content-subdued);
+    background: var(--background-level-2);
+    filter: brightness(0.96);
+    border-radius: var(--radius-button);
+    padding: 2px 8px;
+  }
+  .rate-value { white-space: nowrap; }
+  .rate-shimmer {
+    display: inline-block;
+    width: 110px;
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--background-level-2) 25%, var(--border-subtle) 50%, var(--background-level-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1s infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ── CTA + footer ── */
+  .cta-btn {
+    margin: 0 16px;
+    height: 48px;
+    border-radius: var(--radius-button);
+    border: none;
+    background: var(--action-primary-default);
+    color: var(--content-on-primary);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.1s;
+  }
+  .cta-btn:hover { background: var(--action-primary-hover); }
+  .cta-btn:active { transform: scale(0.98); }
+
+  .powered-by {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 16px 2px;
+  }
+  .powered-by-text {
+    font-size: 12px;
+    color: var(--content-subdued);
+  }
+  .powered-by-text strong { font-weight: 700; color: var(--content-default); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useLayoutEffect, useRef } = React;
+
+/* ─── MOCK DATA ─── */
+const PRICES = { BTC: 67900, ETH: 3400, USDC: 1 };
+const BALANCES = { BTC: 0.00099, ETH: 0.0206, USDC: 70 };
+const ASSET_LIST = ['BTC', 'ETH', 'USDC'];
+const NETWORK_FEE_RATE = 0.0399;
+const DEPOSIT_FEE_RATE = 0.0399;
+const FEE_RATE = NETWORK_FEE_RATE + DEPOSIT_FEE_RATE;
+
+/* ─── FORMAT HELPERS ─── */
+function formatUsdPlain(n) {
+  if (!n) return '0';
+  const decimals = Number.isInteger(n) ? 0 : 2;
+  return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function formatCryptoPlain(n) {
+  if (!n) return '0.00';
+  let s = n.toFixed(8).replace(/0+$/, '');
+  if (s.endsWith('.')) s = s.slice(0, -1);
+  const decimals = (s.split('.')[1] || '').length;
+  if (decimals < 2) s = n.toFixed(2);
+  return s;
+}
+function sanitizeAmountInput(raw) {
+  let v = raw.replace(/[^0-9.]/g, '');
+  const firstDot = v.indexOf('.');
+  if (firstDot !== -1) v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
+  return v;
+}
+
+/* ─── ICONS ─── */
+function Icon({ children, size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+      {children}
+    </svg>
+  );
+}
+function ChevronDownIcon(props) {
+  return <Icon size={props.size || 16}><path d="M5 8.5L12 15.5L19 8.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></Icon>;
+}
+function CloseIcon(props) {
+  return <Icon size={props.size || 16}><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></Icon>;
+}
+function ArrowDownIcon(props) {
+  return <Icon size={props.size || 16}><path d="M12 4V20M12 20L6 14M12 20L18 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></Icon>;
+}
+function SwitchVerticalIcon(props) {
+  return (
+    <Icon size={props.size || 16}>
+      <path d="M7 4V18M7 18L4 15M7 18L10 15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M17 20V6M17 6L14 9M17 6L20 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </Icon>
+  );
+}
+function InfoCircleIcon(props) {
+  return (
+    <Icon size={props.size || 14}>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 11V16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="8" r="0.9" fill="currentColor" />
+    </Icon>
+  );
+}
+function CheckIcon(props) {
+  return <Icon size={props.size || 14}><path d="M5 12.5L9.5 17L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Icon>;
+}
+function LeafIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M20 4C13 4 4 8 4 17c0 1.1.9 2 2 2 9 0 13-9 13-15 0 0 1 0 1 0z" fill="#1a9c17" />
+      <path d="M6 18C10 14 14 10 19 5" stroke="#ffffff" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
+    </svg>
+  );
+}
+
+const ASSET_ICON_STYLE = {
+  BTC: { bg: '#f7931a', fg: '#ffffff', glyph: '₿', border: null },
+  ETH: { bg: '#ffffff', fg: '#3c3c3d', glyph: 'Ξ', border: '#e2e2e2' },
+  USDC: { bg: '#2775ca', fg: '#ffffff', glyph: '$', border: null },
+};
+function AssetIcon({ ticker, size = 24 }) {
+  const a = ASSET_ICON_STYLE[ticker] || ASSET_ICON_STYLE.BTC;
+  return (
+    <span
+      className="asset-icon"
+      aria-hidden="true"
+      style={{
+        width: size, height: size, background: a.bg, color: a.fg,
+        border: a.border ? `1px solid ${a.border}` : 'none',
+        fontSize: size * 0.55,
+      }}
+    >{a.glyph}</span>
+  );
+}
+
+/* ─── OVERFLOW HANDLING ─── */
+function useOverflowCheck(text) {
+  const ref = useRef(null);
+  const [truncated, setTruncated] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) { setTruncated(false); return; }
+    setTruncated(el.scrollWidth > el.clientWidth + 1);
+  }, [text]);
+  return { ref, truncated };
+}
+function useFitWidth(text) {
+  const ref = useRef(null);
+  const [compact, setCompact] = useState(false);
+  const [truncated, setTruncated] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setCompact(false);
+    setTruncated(false);
+    if (el.scrollWidth > el.clientWidth + 1) setCompact(true);
+  }, [text]);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !compact) return;
+    setTruncated(el.scrollWidth > el.clientWidth + 1);
+  }, [compact, text]);
+  return { ref, compact, truncated };
+}
+
+/* ─── ASSET SELECTOR ─── */
+function AssetSelector({ value, exclude, onChange, onClear, allowClear, label, empty }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const options = ASSET_LIST.filter((t) => t !== exclude);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e) { if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false); }
+    function onKey(e) { if (e.key === 'Escape') setOpen(false); }
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="asset-selector" ref={rootRef}>
+      <button
+        type="button"
+        className={`asset-selector-trigger${empty ? ' empty' : ''}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={empty ? `Select ${label.toLowerCase()} asset` : `${label} asset, currently ${value}`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {empty ? (
+          <span className="select-asset-label">Select asset</span>
+        ) : (
+          <React.Fragment>
+            <AssetIcon ticker={value} size={24} />
+            <span className="asset-ticker">{value}</span>
+            <ChevronDownIcon size={18} />
+          </React.Fragment>
+        )}
+      </button>
+      {open && (
+        <ul className="asset-selector-panel" role="listbox" aria-label={`Select ${label} asset`}>
+          {options.map((t) => (
+            <li key={t} role="presentation">
+              <button
+                type="button"
+                role="option"
+                aria-selected={t === value}
+                className={`asset-option${t === value ? ' active' : ''}`}
+                onClick={() => { onChange(t); setOpen(false); }}
+              >
+                <AssetIcon ticker={t} size={20} />
+                <span className="asset-option-label">{t}</span>
+                {t === value && <CheckIcon size={14} />}
+              </button>
+            </li>
+          ))}
+          {allowClear && (
+            <li role="presentation">
+              <div className="asset-option-divider" />
+              <button type="button" className="asset-option clear" onClick={() => { onClear(); setOpen(false); }}>
+                Clear selection
+              </button>
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ─── AMOUNT FIELD ─── */
+function AmountField({ value, onFocus, onBlur, onChange, inputRef, ariaLabel, error, active }) {
+  const { ref: fitRef, compact, truncated } = useFitWidth(value);
+  return (
+    <input
+      ref={(el) => { fitRef.current = el; if (inputRef) inputRef.current = el; }}
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
+      placeholder="0"
+      className={
+        'amount-input' +
+        (compact ? ' compact' : '') +
+        (truncated ? ' truncated' : '') +
+        (error ? ' error' : (active ? ' active-row' : ''))
+      }
+      value={value}
+      onFocus={(e) => { e.target.select(); onFocus(); }}
+      onBlur={onBlur}
+      onChange={onChange}
+      aria-label={ariaLabel}
+      title={truncated ? value : undefined}
+    />
+  );
+}
+
+/* ─── SWAP ROW ─── */
+function SwapRow({
+  variant, asset, excludeAsset, onAssetChange, onClearAsset, empty,
+  amountValue, onAmountFocus, onAmountBlur, onAmountChange, inputRef,
+  isActiveRow, isError, errorMessage, equivText, balanceText, onMax,
+  onToggleUnit, feeNote, swapping, unit,
+}) {
+  const label = variant === 'origin' ? 'Sell' : 'Buy';
+  const { ref: equivRef, truncated: equivTruncated } = useOverflowCheck(equivText || '');
+  const { ref: balRef, truncated: balTruncated } = useOverflowCheck(balanceText || '');
+  /* Which row shows the switch button is "sell" by default — it does not require
+     the native input to literally have DOM focus (per Figma 18612:17818: the
+     Origin row renders in its Focus variant at rest, Destination in Default). */
+  const showSwitchIcon = isActiveRow || (variant === 'origin' && isError);
+
+  return (
+    <div
+      className={
+        `swap-row ${variant}` + (empty ? ' empty-row' : '') + (isError ? ' is-error' : '') + (swapping ? ' swap-animate' : '')
+      }
+    >
+      <div className="swap-row-label">{label}</div>
+
+      <div className="swap-row-main">
+        {empty ? (
+          <span className="amount-static subdued">$0</span>
+        ) : (
+          <React.Fragment>
+            {unit === 'USD' && (
+              <span className={`amount-currency-prefix${isError ? ' error' : (isActiveRow ? ' active-row' : '')}`}>$</span>
+            )}
+            <AmountField
+              value={amountValue}
+              onFocus={onAmountFocus}
+              onBlur={onAmountBlur}
+              onChange={onAmountChange}
+              inputRef={inputRef}
+              ariaLabel={`${label} amount`}
+              error={isError}
+              active={isActiveRow}
+            />
+          </React.Fragment>
+        )}
+
+        <AssetSelector
+          value={asset}
+          exclude={excludeAsset}
+          onChange={onAssetChange}
+          onClear={onClearAsset}
+          allowClear={variant === 'destination' && !empty}
+          label={label}
+          empty={empty}
+        />
+      </div>
+
+      {isError && <div className="swap-row-error" role="alert">{errorMessage}</div>}
+
+      {!empty && (
+        <div className="swap-row-details">
+          {variant === 'origin' ? (
+            <React.Fragment>
+              <div className="equiv-row grow">
+                <span
+                  className={`equiv-text${equivTruncated ? ' truncated' : ''}`}
+                  ref={equivRef}
+                  title={equivTruncated ? equivText : undefined}
+                >
+                  {equivText}
+                </span>
+                {showSwitchIcon && (
+                  <button
+                    type="button"
+                    className="switch-unit-btn"
+                    aria-label="Switch display currency"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={onToggleUnit}
+                  >
+                    <SwitchVerticalIcon size={14} />
+                  </button>
+                )}
+              </div>
+              <div className="row-trailing">
+                <span className="balance-line">
+                  <InfoCircleIcon size={13} />
+                  <span
+                    className={`balance-text${balTruncated ? ' truncated' : ''}`}
+                    ref={balRef}
+                    title={balTruncated ? balanceText : undefined}
+                  >
+                    {balanceText}
+                  </span>
+                </span>
+                <button type="button" className="max-pill" onClick={onMax}>Max</button>
+              </div>
+            </React.Fragment>
+          ) : (
+            <div className="buy-equiv-group">
+              <div className="equiv-row">
+                <span
+                  className={`equiv-text${equivTruncated ? ' truncated' : ''}`}
+                  ref={equivRef}
+                  title={equivTruncated ? equivText : undefined}
+                >
+                  {equivText}
+                </span>
+                {showSwitchIcon && (
+                  <button
+                    type="button"
+                    className="switch-unit-btn"
+                    aria-label="Switch display currency"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={onToggleUnit}
+                  >
+                    <SwitchVerticalIcon size={14} />
+                  </button>
+                )}
+              </div>
+              <span className="fee-note">{feeNote}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── FEE BREAKDOWN ─── */
+function FeeBreakdown({ sellUsd, buyAsset, networkFeeUsd, depositFeeUsd, youReceiveUsd }) {
+  const open = !!sellUsd && sellUsd > 0 && !!buyAsset;
+  return (
+    <div className={`fee-breakdown-wrap${open ? ' open' : ''}`} aria-hidden={!open}>
+      <div className="fee-breakdown-inner">
+        <div className="fee-breakdown">
+          <div className="fee-row">
+            <span className="fee-row-label">
+              Network fee ({(NETWORK_FEE_RATE * 100).toFixed(2)}%)
+              <InfoCircleIcon size={13} />
+            </span>
+            <span className="fee-row-value">-${formatUsdPlain(networkFeeUsd)}</span>
+          </div>
+          <div className="fee-row">
+            <span className="fee-row-label">
+              Deposit fee ({(DEPOSIT_FEE_RATE * 100).toFixed(2)}%)
+              <InfoCircleIcon size={13} />
+            </span>
+            <span className="fee-row-value">-${formatUsdPlain(depositFeeUsd)}</span>
+          </div>
+          <div className="fee-divider" />
+          <div className="fee-row">
+            <span className="fee-row-label strong">You receive in {buyAsset}</span>
+            <span className="fee-row-value strong">${formatUsdPlain(youReceiveUsd)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── RATE STRIP ─── */
+function RateStrip({ sellAsset, buyAsset, countdown, loading }) {
+  if (!buyAsset) return null;
+  const rate = PRICES[sellAsset] / PRICES[buyAsset];
+  return (
+    <div className="rate-strip">
+      <span className="rate-label">
+        Exchange rate
+        <InfoCircleIcon size={14} />
+      </span>
+      <span className="rate-value-wrap">
+        <span className="countdown-badge">{countdown}s</span>
+        {loading ? (
+          <span className="rate-shimmer" aria-hidden="true" />
+        ) : (
+          <span className="rate-value">1.00 {sellAsset} ≈ {formatCryptoPlain(rate)} {buyAsset}</span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+/* ─── SWAP WIDGET ─── */
+function SwapWidget() {
+  const [sellAsset, setSellAsset] = useState('BTC');
+  const [buyAsset, setBuyAsset] = useState('ETH');
+  const [unit, setUnit] = useState('USD');
+  /* "sell" or "buy" — whichever row currently renders in the Figma "Focus"
+     variant. Defaults to "sell" and never reverts to a no-row state: Origin
+     renders Focus at rest (18612:17818), Destination renders Focus only once
+     the user actively moves to it. Blurring a field does not unset this —
+     only focusing the other row does. */
+  const [activeRow, setActiveRow] = useState('sell');
+  /* Separate from activeRow: which row's native input literally has DOM focus
+     right now, i.e. whether its live rawEdit buffer (vs. the formatted value)
+     should be shown. Unlike activeRow, this DOES clear back to null on blur. */
+  const [typingRow, setTypingRow] = useState(null);
+  const [rawEdit, setRawEdit] = useState('');
+  const [sellUsd, setSellUsd] = useState(0);
+  const [sellError, setSellError] = useState(null);
+  const [swapping, setSwapping] = useState(false);
+  const [rateCountdown, setRateCountdown] = useState(20);
+  const [rateLoading, setRateLoading] = useState(false);
+
+  const sellInputRef = useRef(null);
+  const buyInputRef = useRef(null);
+
+  const sellPrice = PRICES[sellAsset];
+  const buyPrice = buyAsset ? PRICES[buyAsset] : null;
+  const sellCrypto = sellPrice ? sellUsd / sellPrice : 0;
+  const buyUsd = sellUsd * (1 - FEE_RATE);
+  const buyCrypto = buyPrice ? buyUsd / buyPrice : 0;
+  const networkFeeUsd = sellUsd * NETWORK_FEE_RATE;
+  const depositFeeUsd = sellUsd * DEPOSIT_FEE_RATE;
+
+  function formatForUnit(usdVal, price, u) {
+    if (u === 'USD') return formatUsdPlain(usdVal);
+    return formatCryptoPlain(price ? usdVal / price : 0);
+  }
+
+  const sellDisplay = typingRow === 'sell' ? rawEdit : formatForUnit(sellUsd, sellPrice, unit);
+  const buyDisplay = typingRow === 'buy' ? rawEdit : formatForUnit(buyUsd, buyPrice, unit);
+
+  const sellEquivText = unit === 'USD'
+    ? `≈ ${formatCryptoPlain(sellCrypto)} ${sellAsset}`
+    : `≈ $${formatUsdPlain(sellUsd)}`;
+  const buyEquivText = unit === 'USD'
+    ? `≈ ${formatCryptoPlain(buyCrypto)} ${buyAsset}`
+    : `≈ $${formatUsdPlain(buyUsd)}`;
+  const sellBalanceText = `${formatCryptoPlain(BALANCES[sellAsset])} ${sellAsset}`;
+
+  /* Rate refresh: periodic countdown + instant refresh when the asset pair changes */
+  useEffect(() => {
+    const id = setInterval(() => {
+      setRateCountdown((c) => {
+        if (c <= 1) {
+          setRateLoading(true);
+          setTimeout(() => setRateLoading(false), 400);
+          return 20;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => {
+    setRateCountdown(20);
+    setRateLoading(true);
+    const t = setTimeout(() => setRateLoading(false), 400);
+    return () => clearTimeout(t);
+  }, [sellAsset, buyAsset]);
+
+  function validateSell(usdVal) {
+    const current = usdVal === undefined ? sellUsd : usdVal;
+    if (!current || current <= 0) { setSellError('zero'); return; }
+    const crypto = current / sellPrice;
+    if (crypto > BALANCES[sellAsset] + 1e-9) { setSellError('insufficient'); return; }
+    setSellError(null);
+  }
+
+  function handleSellFocus() {
+    setActiveRow('sell');
+    setTypingRow('sell');
+    setRawEdit(formatForUnit(sellUsd, sellPrice, unit));
+  }
+  function handleSellChange(e) {
+    const v = sanitizeAmountInput(e.target.value);
+    setRawEdit(v);
+    const parsed = parseFloat(v) || 0;
+    const newSellUsd = unit === 'USD' ? parsed : parsed * sellPrice;
+    setSellUsd(newSellUsd);
+    if (sellError) setSellError(null);
+  }
+  function handleSellBlur() {
+    validateSell();
+    setTypingRow((t) => (t === 'sell' ? null : t));
+    /* activeRow is intentionally left as "sell" — blurring doesn't hand the
+       Focus variant back to neither row, only focusing the other row does. */
+  }
+
+  function handleBuyFocus() {
+    if (!buyAsset) return;
+    setActiveRow('buy');
+    setTypingRow('buy');
+    setRawEdit(formatForUnit(buyUsd, buyPrice, unit));
+  }
+  function handleBuyChange(e) {
+    const v = sanitizeAmountInput(e.target.value);
+    setRawEdit(v);
+    const parsed = parseFloat(v) || 0;
+    const desiredBuyUsd = unit === 'USD' ? parsed : parsed * buyPrice;
+    const newSellUsd = desiredBuyUsd / (1 - FEE_RATE);
+    setSellUsd(newSellUsd);
+    if (sellError) setSellError(null);
+  }
+  function handleBuyBlur() {
+    validateSell();
+    setTypingRow((t) => (t === 'buy' ? null : t));
+  }
+
+  function handleMax() {
+    const usdVal = BALANCES[sellAsset] * sellPrice;
+    setSellUsd(usdVal);
+    setActiveRow('sell');
+    setSellError(null);
+    /* No rawEdit/typingRow juggling needed here: sellDisplay falls back to
+       formatForUnit(sellUsd, ...) whenever typingRow !== 'sell', which already
+       reflects usdVal as soon as it's committed above. */
+  }
+
+  function handleToggleUnit() {
+    setUnit((prev) => {
+      const next = prev === 'USD' ? 'CRYPTO' : 'USD';
+      if (typingRow === 'sell') setRawEdit(formatForUnit(sellUsd, sellPrice, next));
+      else if (typingRow === 'buy') setRawEdit(formatForUnit(buyUsd, buyPrice, next));
+      return next;
+    });
+  }
+
+  function handleSwapDirection() {
+    if (swapping || !buyAsset) return;
+    setSwapping(true);
+    setTimeout(() => {
+      /* The arrow always points down, so the swap is always top-to-bottom,
+         regardless of which row was last focused: whatever Sell currently
+         shows becomes Buy's new amount exactly. Since buyUsd is always
+         derived as sellUsd * (1 - fee), the only way for the NEW buyUsd to
+         land exactly on the OLD sellUsd is to gross the new sellUsd back up
+         by the fee first: newSellUsd / (1-fee) * (1-fee) = oldSellUsd. */
+      setSellAsset(buyAsset);
+      setBuyAsset(sellAsset);
+      setSellUsd(sellUsd / (1 - FEE_RATE));
+      setSellError(null);
+    }, 150);
+    setTimeout(() => setSwapping(false), 300);
+  }
+
+  function handleSwapNow() {
+    validateSell();
+  }
+
+  function handleSellAssetChange(t) {
+    setSellAsset(t);
+    setSellError(null);
+  }
+  function handleBuyAssetChange(t) {
+    setBuyAsset(t);
+  }
+  function handleClearBuyAsset() {
+    setBuyAsset(null);
+    /* An assetless row can't hold the Focus variant — hand it back to sell. */
+    setActiveRow((a) => (a === 'buy' ? 'sell' : a));
+    setTypingRow((t) => (t === 'buy' ? null : t));
+  }
+  function handleClose() {
+    setSellAsset('BTC');
+    setBuyAsset('ETH');
+    setUnit('USD');
+    setActiveRow('sell');
+    setTypingRow(null);
+    setRawEdit('');
+    setSellUsd(0);
+    setSellError(null);
+  }
+
+  return (
+    <div className="frame" role="region" aria-label="Swap">
+      <div className="top-block">
+        <div className="swap-header">
+          <h1 className="swap-title">Swap</h1>
+          <button type="button" className="close-btn" aria-label="Close" onClick={handleClose}>
+            <CloseIcon size={14} />
+          </button>
+        </div>
+
+        <div className="swap-card">
+          <SwapRow
+            variant="origin"
+            asset={sellAsset}
+            excludeAsset={buyAsset}
+            onAssetChange={handleSellAssetChange}
+            amountValue={sellDisplay}
+            onAmountFocus={handleSellFocus}
+            onAmountBlur={handleSellBlur}
+            onAmountChange={handleSellChange}
+            inputRef={sellInputRef}
+            isActiveRow={activeRow === 'sell'}
+            isError={!!sellError}
+            errorMessage={sellError === 'zero' ? 'Amount must be greater than 0' : sellError === 'insufficient' ? 'Insufficient balance' : null}
+            equivText={sellEquivText}
+            balanceText={sellBalanceText}
+            onMax={handleMax}
+            onToggleUnit={handleToggleUnit}
+            swapping={swapping}
+            unit={unit}
+          />
+
+          <div className="swap-connector">
+            <button
+              type="button"
+              className="swap-direction-btn"
+              aria-label="Swap sell and buy assets"
+              onClick={handleSwapDirection}
+              disabled={!buyAsset || swapping}
+            >
+              <ArrowDownIcon size={16} />
+            </button>
+          </div>
+
+          <SwapRow
+            variant="destination"
+            asset={buyAsset}
+            excludeAsset={sellAsset}
+            onAssetChange={handleBuyAssetChange}
+            onClearAsset={handleClearBuyAsset}
+            empty={!buyAsset}
+            amountValue={buyDisplay}
+            onAmountFocus={handleBuyFocus}
+            onAmountBlur={handleBuyBlur}
+            onAmountChange={handleBuyChange}
+            inputRef={buyInputRef}
+            isActiveRow={activeRow === 'buy'}
+            isError={false}
+            equivText={buyAsset ? buyEquivText : ''}
+            feeNote="After fees"
+            onToggleUnit={handleToggleUnit}
+            swapping={swapping}
+            unit={unit}
+          />
+        </div>
+
+        <FeeBreakdown
+          sellUsd={sellUsd}
+          buyAsset={buyAsset}
+          networkFeeUsd={networkFeeUsd}
+          depositFeeUsd={depositFeeUsd}
+          youReceiveUsd={buyUsd}
+        />
+
+        <RateStrip sellAsset={sellAsset} buyAsset={buyAsset} countdown={rateCountdown} loading={rateLoading} />
+      </div>
+
+      <div className="bottom-block">
+        <button type="button" className="cta-btn" onClick={handleSwapNow}>Swap now</button>
+        <div className="powered-by">
+          <LeafIcon />
+          <span className="powered-by-text">Powered by <strong>Uphold</strong></span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div className="stage">
+      <div className="stage-label">Payment Widget · Swap</div>
+      <SwapWidget />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
