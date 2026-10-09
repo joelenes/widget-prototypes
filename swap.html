@@ -134,19 +134,29 @@
   .swap-card {
     margin: 0 16px;
     position: relative;
+    /* Per Figma 18625:3219 ("isolate" on the outer wrapper): creates a fresh
+       stacking context so the Sell+button group's z-index:2 vs. Buy's
+       z-index:1 is always compared cleanly, with nothing above it able to
+       interfere. */
+    isolation: isolate;
   }
 
   .swap-row {
     position: relative;
-    padding: 16px 16px 12px;
+    /* Per Figma 18612:17763: dimension/5 (16px) horizontal, dimension/7 (24px)
+       vertical, dimension/4 (12px) gap between the amount and details rows. */
+    padding: 24px 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     background: var(--background-level-1);
     border-radius: var(--radius-lg);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
   .swap-row.destination.empty-row { padding-bottom: 16px; gap: 0; }
+  /* Sits behind the Sell+button group (z-index 2) so it visually tucks under
+     the overlap, per Figma 18625:3219. */
+  .swap-row.destination { z-index: 1; }
 
   /* Swap-direction feedback: both Sell and Buy are already their own
      background-level-1 card at rest, so nothing about their background ever
@@ -244,7 +254,10 @@
     font-size: 12px;
     line-height: 16px;
     color: var(--content-critical);
-    margin-top: -2px;
+    /* The row already carries a 12px gap (dimension/4) from .swap-row; the
+       caption sits in its own nested group with only a 4px gap (dimension/2)
+       from the amount-details row above it, so pull back by the difference. */
+    margin-top: -8px;
   }
 
   .swap-row-details {
@@ -252,7 +265,6 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-top: 2px;
   }
 
   .equiv-row {
@@ -266,13 +278,14 @@
      "Account balance" is a fixed 159px block, placed via that asymmetry). */
   .equiv-row.grow { flex: 1 1 auto; }
 
-  /* Buy row: equiv text + switch icon + "After fees" are three siblings in
-     ONE flex-[1_0_0] group (12px gaps), so they sit together on the left with
-     the leftover space pushed past "After fees" — not between the two. */
+  /* Buy row: per Figma 18625:3219, equiv text stacks directly above
+     "After fees" (no switch icon, no side-by-side gap) in one flex-[1_0_0]
+     column, pushed to the left with the leftover space past it. */
   .buy-equiv-group {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
     min-width: 0;
     flex: 1 1 auto;
   }
@@ -301,13 +314,15 @@
     border-radius: 50%;
     border: none;
     background: transparent;
-    color: var(--content-subdued);
+    /* Per Figma 18612:17818: the switch icon renders in content/info (the
+       same blue as the caret), not the row's subdued gray. */
+    color: var(--content-info);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
   }
-  .switch-unit-btn:hover { background: var(--background-level-2); color: var(--content-default); }
+  .switch-unit-btn:hover { background: var(--background-level-2); }
 
   .row-trailing {
     display: flex;
@@ -370,10 +385,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    cursor: pointer;
     color: var(--content-default);
   }
-  .asset-selector-trigger:hover { background: var(--background-level-2); }
   .asset-selector-trigger.empty {
     flex: 1 1 auto;
     min-width: 140px;
@@ -382,7 +395,6 @@
     background: var(--action-primary-default);
     color: var(--content-on-primary);
   }
-  .asset-selector-trigger.empty:hover { background: var(--action-primary-hover); }
 
   .asset-ticker { font-size: 14px; line-height: 20px; font-weight: 600; }
   .select-asset-label { font-size: 16px; line-height: 20px; font-weight: 600; }
@@ -396,51 +408,35 @@
     flex-shrink: 0;
   }
 
-  .asset-selector-panel {
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    min-width: 160px;
-    background: var(--background-level-1);
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-    z-index: 20;
-    overflow: hidden;
-    list-style: none;
-  }
-  .asset-option {
-    width: 100%;
-    height: 44px;
-    padding: 0 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    color: var(--content-default);
-    text-align: left;
-  }
-  .asset-option:hover { background: var(--background-level-2); }
-  .asset-option.active { font-weight: 600; }
-  .asset-option-label { flex: 1 1 auto; font-size: 14px; }
-  .asset-option.clear { color: var(--content-subdued); font-size: 13px; }
-  .asset-option-divider { height: 1px; background: var(--border-subtle); margin: 2px 0; }
 
   /* ── Swap direction connector ──
-     Real height now (the visible gap between the two independent cards,
-     showing the page's own background through it) instead of a zero-height
-     div sitting on a shared seam — the button centers within that gap. */
-  .swap-connector {
+     Per Figma 18625:3219: the button is no longer absolutely positioned over
+     a gap — it's a normal flex child centered below Sell, and the two cards
+     overlap it (and each other) via negative margins + layered z-index:
+     Sell+button group sits in front (z-index 2) with margin-bottom:-12px
+     pulling Buy up underneath it, while Sell itself carries margin-bottom:
+     -16px so the button tucks up into its bottom padding instead of
+     floating in a plain gap. */
+  .swap-amount-group {
+    display: flex;
+    flex-direction: column;
+    /* stretch (the default), not center — Sell must stay full-width; only
+       the button centers itself via align-self below. */
     position: relative;
-    height: 2px;
+    z-index: 2;
+    margin-bottom: -12px;
+  }
+  .swap-row.origin {
+    padding-bottom: 32px;
+    margin-bottom: -16px;
   }
   .swap-direction-btn {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    align-self: center;
+    /* Explicit, not just "last child of the z-index:2 group" — the button
+       must be unambiguously above both cards' content, not just above its
+       own sibling row by DOM order. */
+    position: relative;
+    z-index: 3;
     width: 34px;
     height: 34px;
     border-radius: 50%;
@@ -451,7 +447,6 @@
     justify-content: center;
     color: var(--content-default);
     cursor: pointer;
-    z-index: 5;
   }
   .swap-direction-btn:hover:not(:disabled) { background: var(--background-level-2); }
   .swap-direction-btn:disabled { color: var(--content-disabled); cursor: not-allowed; }
@@ -597,8 +592,7 @@ const PRICES = { BTC: 67900, ETH: 3400, USDC: 1 };
 const BALANCES = { BTC: 0.00099, ETH: 0.0206, USDC: 70 };
 const ASSET_LIST = ['BTC', 'ETH', 'USDC'];
 const NETWORK_FEE_RATE = 0.0399;
-const DEPOSIT_FEE_RATE = 0.0399;
-const FEE_RATE = NETWORK_FEE_RATE + DEPOSIT_FEE_RATE;
+const FEE_RATE = NETWORK_FEE_RATE;
 
 /* ─── FORMAT HELPERS ─── */
 function formatUsdPlain(n) {
@@ -654,9 +648,6 @@ function InfoCircleIcon(props) {
       <circle cx="12" cy="8" r="0.9" fill="currentColor" />
     </Icon>
   );
-}
-function CheckIcon(props) {
-  return <Icon size={props.size || 14}><path d="M5 12.5L9.5 17L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></Icon>;
 }
 function LeafIcon() {
   return (
@@ -718,32 +709,15 @@ function useFitWidth(text) {
 }
 
 /* ─── ASSET SELECTOR ─── */
-function AssetSelector({ value, exclude, onChange, onClear, allowClear, label, empty }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-  const options = ASSET_LIST.filter((t) => t !== exclude);
-
-  useEffect(() => {
-    if (!open) return;
-    function onDocClick(e) { if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false); }
-    function onKey(e) { if (e.key === 'Escape') setOpen(false); }
-    document.addEventListener('mousedown', onDocClick);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDocClick);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
+function AssetSelector({ value, label, empty }) {
+  /* Visual-only: the asset pill no longer opens a picker on click — per the
+     original spec this was an acceptable stub, and it's now explicitly
+     non-interactive rather than a dropdown. */
   return (
-    <div className="asset-selector" ref={rootRef}>
-      <button
-        type="button"
+    <div className="asset-selector">
+      <div
         className={`asset-selector-trigger${empty ? ' empty' : ''}`}
-        aria-haspopup="listbox"
-        aria-expanded={open}
         aria-label={empty ? `Select ${label.toLowerCase()} asset` : `${label} asset, currently ${value}`}
-        onClick={() => setOpen((o) => !o)}
       >
         {empty ? (
           <span className="select-asset-label">Select asset</span>
@@ -754,34 +728,7 @@ function AssetSelector({ value, exclude, onChange, onClear, allowClear, label, e
             <ChevronDownIcon size={18} />
           </React.Fragment>
         )}
-      </button>
-      {open && (
-        <ul className="asset-selector-panel" role="listbox" aria-label={`Select ${label} asset`}>
-          {options.map((t) => (
-            <li key={t} role="presentation">
-              <button
-                type="button"
-                role="option"
-                aria-selected={t === value}
-                className={`asset-option${t === value ? ' active' : ''}`}
-                onClick={() => { onChange(t); setOpen(false); }}
-              >
-                <AssetIcon ticker={t} size={20} />
-                <span className="asset-option-label">{t}</span>
-                {t === value && <CheckIcon size={14} />}
-              </button>
-            </li>
-          ))}
-          {allowClear && (
-            <li role="presentation">
-              <div className="asset-option-divider" />
-              <button type="button" className="asset-option clear" onClick={() => { onClear(); setOpen(false); }}>
-                Clear selection
-              </button>
-            </li>
-          )}
-        </ul>
-      )}
+      </div>
     </div>
   );
 }
@@ -814,7 +761,7 @@ function AmountField({ value, onFocus, onBlur, onChange, inputRef, ariaLabel, er
 
 /* ─── SWAP ROW ─── */
 function SwapRow({
-  variant, asset, excludeAsset, onAssetChange, onClearAsset, empty,
+  variant, asset, empty,
   amountValue, onAmountFocus, onAmountBlur, onAmountChange, inputRef,
   isActiveRow, isError, errorMessage, equivText, balanceText, onMax,
   onToggleUnit, feeNote, swapping, unit,
@@ -856,18 +803,8 @@ function SwapRow({
           </React.Fragment>
         )}
 
-        <AssetSelector
-          value={asset}
-          exclude={excludeAsset}
-          onChange={onAssetChange}
-          onClear={onClearAsset}
-          allowClear={variant === 'destination' && !empty}
-          label={label}
-          empty={empty}
-        />
+        <AssetSelector value={asset} label={label} empty={empty} />
       </div>
-
-      {isError && <div className="swap-row-error" role="alert">{errorMessage}</div>}
 
       {!empty && (
         <div className="swap-row-details">
@@ -895,7 +832,6 @@ function SwapRow({
               </div>
               <div className="row-trailing">
                 <span className="balance-line">
-                  <InfoCircleIcon size={13} />
                   <span
                     className={`balance-text${balTruncated ? ' truncated' : ''}`}
                     ref={balRef}
@@ -908,8 +844,12 @@ function SwapRow({
               </div>
             </React.Fragment>
           ) : (
-            <div className="buy-equiv-group">
-              <div className="equiv-row">
+            <React.Fragment>
+              {/* Per Figma 18625:3219: Buy no longer has its own switch-unit
+                 button at all (the shared toggle lives on Sell only), and the
+                 equiv text stacks above "After fees" instead of sitting
+                 beside it. */}
+              <div className="buy-equiv-group">
                 <span
                   className={`equiv-text${equivTruncated ? ' truncated' : ''}`}
                   ref={equivRef}
@@ -917,29 +857,33 @@ function SwapRow({
                 >
                   {equivText}
                 </span>
-                {showSwitchIcon && (
-                  <button
-                    type="button"
-                    className="switch-unit-btn"
-                    aria-label="Switch display currency"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={onToggleUnit}
-                  >
-                    <SwitchVerticalIcon size={14} />
-                  </button>
-                )}
+                <span className="fee-note">{feeNote}</span>
               </div>
-              <span className="fee-note">{feeNote}</span>
-            </div>
+              <div className="row-trailing">
+                <span className="balance-line">
+                  <span
+                    className={`balance-text${balTruncated ? ' truncated' : ''}`}
+                    ref={balRef}
+                    title={balTruncated ? balanceText : undefined}
+                  >
+                    {balanceText}
+                  </span>
+                </span>
+              </div>
+            </React.Fragment>
           )}
         </div>
       )}
+
+      {/* Per Figma 18612:17818: the error caption sits BELOW the amount-details
+         row (balance/Max still render above it), not between the input and it. */}
+      {isError && <div className="swap-row-error" role="alert">{errorMessage}</div>}
     </div>
   );
 }
 
 /* ─── FEE BREAKDOWN ─── */
-function FeeBreakdown({ sellUsd, buyAsset, networkFeeUsd, depositFeeUsd, youReceiveUsd }) {
+function FeeBreakdown({ sellUsd, buyAsset, networkFeeUsd, youReceiveUsd }) {
   const open = !!sellUsd && sellUsd > 0 && !!buyAsset;
   return (
     <div className={`fee-breakdown-wrap${open ? ' open' : ''}`} aria-hidden={!open}>
@@ -951,13 +895,6 @@ function FeeBreakdown({ sellUsd, buyAsset, networkFeeUsd, depositFeeUsd, youRece
               <InfoCircleIcon size={13} />
             </span>
             <span className="fee-row-value">-${formatUsdPlain(networkFeeUsd)}</span>
-          </div>
-          <div className="fee-row">
-            <span className="fee-row-label">
-              Deposit fee ({(DEPOSIT_FEE_RATE * 100).toFixed(2)}%)
-              <InfoCircleIcon size={13} />
-            </span>
-            <span className="fee-row-value">-${formatUsdPlain(depositFeeUsd)}</span>
           </div>
           <div className="fee-divider" />
           <div className="fee-row">
@@ -1023,7 +960,6 @@ function SwapWidget() {
   const buyUsd = sellUsd * (1 - FEE_RATE);
   const buyCrypto = buyPrice ? buyUsd / buyPrice : 0;
   const networkFeeUsd = sellUsd * NETWORK_FEE_RATE;
-  const depositFeeUsd = sellUsd * DEPOSIT_FEE_RATE;
 
   function formatForUnit(usdVal, price, u) {
     if (u === 'USD') return formatUsdPlain(usdVal);
@@ -1040,6 +976,7 @@ function SwapWidget() {
     ? `≈ ${formatCryptoPlain(buyCrypto)} ${buyAsset}`
     : `≈ $${formatUsdPlain(buyUsd)}`;
   const sellBalanceText = `${formatCryptoPlain(BALANCES[sellAsset])} ${sellAsset}`;
+  const buyBalanceText = buyAsset ? `${formatCryptoPlain(BALANCES[buyAsset])} ${buyAsset}` : '';
 
   /* Rate refresh: periodic countdown + instant refresh when the asset pair changes */
   useEffect(() => {
@@ -1151,19 +1088,6 @@ function SwapWidget() {
     validateSell();
   }
 
-  function handleSellAssetChange(t) {
-    setSellAsset(t);
-    setSellError(null);
-  }
-  function handleBuyAssetChange(t) {
-    setBuyAsset(t);
-  }
-  function handleClearBuyAsset() {
-    setBuyAsset(null);
-    /* An assetless row can't hold the Focus variant — hand it back to sell. */
-    setActiveRow((a) => (a === 'buy' ? 'sell' : a));
-    setTypingRow((t) => (t === 'buy' ? null : t));
-  }
   function handleClose() {
     setSellAsset('BTC');
     setBuyAsset('ETH');
@@ -1186,28 +1110,26 @@ function SwapWidget() {
         </div>
 
         <div className="swap-card">
-          <SwapRow
-            variant="origin"
-            asset={sellAsset}
-            excludeAsset={buyAsset}
-            onAssetChange={handleSellAssetChange}
-            amountValue={sellDisplay}
-            onAmountFocus={handleSellFocus}
-            onAmountBlur={handleSellBlur}
-            onAmountChange={handleSellChange}
-            inputRef={sellInputRef}
-            isActiveRow={activeRow === 'sell'}
-            isError={!!sellError}
-            errorMessage={sellError === 'zero' ? 'Amount must be greater than 0' : sellError === 'insufficient' ? 'Insufficient balance' : null}
-            equivText={sellEquivText}
-            balanceText={sellBalanceText}
-            onMax={handleMax}
-            onToggleUnit={handleToggleUnit}
-            swapping={swapping}
-            unit={unit}
-          />
+          <div className="swap-amount-group">
+            <SwapRow
+              variant="origin"
+              asset={sellAsset}
+              amountValue={sellDisplay}
+              onAmountFocus={handleSellFocus}
+              onAmountBlur={handleSellBlur}
+              onAmountChange={handleSellChange}
+              inputRef={sellInputRef}
+              isActiveRow={activeRow === 'sell'}
+              isError={!!sellError}
+              errorMessage={sellError === 'zero' ? 'Amount must be greater than 0' : sellError === 'insufficient' ? 'Insufficient balance' : null}
+              equivText={sellEquivText}
+              balanceText={sellBalanceText}
+              onMax={handleMax}
+              onToggleUnit={handleToggleUnit}
+              swapping={swapping}
+              unit={unit}
+            />
 
-          <div className="swap-connector">
             <button
               type="button"
               className="swap-direction-btn"
@@ -1222,9 +1144,6 @@ function SwapWidget() {
           <SwapRow
             variant="destination"
             asset={buyAsset}
-            excludeAsset={sellAsset}
-            onAssetChange={handleBuyAssetChange}
-            onClearAsset={handleClearBuyAsset}
             empty={!buyAsset}
             amountValue={buyDisplay}
             onAmountFocus={handleBuyFocus}
@@ -1234,6 +1153,7 @@ function SwapWidget() {
             isActiveRow={activeRow === 'buy'}
             isError={false}
             equivText={buyAsset ? buyEquivText : ''}
+            balanceText={buyBalanceText}
             feeNote="After fees"
             onToggleUnit={handleToggleUnit}
             swapping={swapping}
@@ -1245,7 +1165,6 @@ function SwapWidget() {
           sellUsd={sellUsd}
           buyAsset={buyAsset}
           networkFeeUsd={networkFeeUsd}
-          depositFeeUsd={depositFeeUsd}
           youReceiveUsd={buyUsd}
         />
 
